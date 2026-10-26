@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { usageHue } from '../lib/tone';
 import { splitDuration } from '../lib/time';
 import { Icon } from './Icon';
 
@@ -34,10 +35,11 @@ export function Countdown({ to, now }: { to: Date; now: Date }) {
   );
 }
 
-export function Bar({ pct, color, height = 8 }: { pct: number; color: string; height?: number }) {
+/** A thin usage bar; without an explicit color it takes the usage-level tone (green → red). */
+export function Bar({ pct, color, height = 8 }: { pct: number; color?: string; height?: number }) {
   return (
-    <div className="bar" style={{ height }}>
-      <div className="bar-fill" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: color }} />
+    <div className="bar" style={{ height, ...(color ? {} : { '--tone-h': usageHue(pct).toFixed(1) }) } as CSSProperties}>
+      <div className={`bar-fill ${color ? '' : 'toned'}`} style={{ width: `${Math.max(0, Math.min(100, pct))}%`, ...(color ? { background: color } : {}) }} />
     </div>
   );
 }

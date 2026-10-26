@@ -126,8 +126,11 @@ export function TrayPanel() {
                 <div className="grid-2 gap-12">
                   {(['total', 'fable'] as const).map((k) => (
                     <div key={k} className="row gap-8">
+                      <span className="tray-kind">
+                        <Icon name={k === 'total' ? 'layers' : 'sparkle'} size={12} />
+                      </span>
                       <div className="grow">
-                        <Bar pct={limitOf(a, k).usedPct} color={k === 'total' ? 'var(--total)' : 'var(--fable)'} height={5} />
+                        <Bar pct={limitOf(a, k).usedPct} height={6} />
                       </div>
                       <M className={`tray-pct ${limitOf(a, k).usedPct >= warnAt ? 'error' : ''}`}>{limitOf(a, k).usedPct}%</M>
                     </div>
@@ -137,11 +140,11 @@ export function TrayPanel() {
             ))}
             <div className="row gap-14 xsmall muted tray-legend">
               <span className="row gap-6">
-                <span className="swatch" style={{ background: 'var(--total)' }} />
+                <Icon name="layers" size={12} />
                 لیمیت کل
               </span>
               <span className="row gap-6">
-                <span className="swatch" style={{ background: 'var(--fable)' }} />
+                <Icon name="sparkle" size={12} />
                 لیمیت <M>Fable</M>
               </span>
               {inactive > 0 && (

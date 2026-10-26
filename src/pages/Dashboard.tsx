@@ -10,6 +10,7 @@ import { sampleDatabase } from '../lib/sample';
 import { bestAccount, daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account } from '../lib/types';
 import { useNow } from '../lib/useNow';
+import { usageColor } from '../lib/tone';
 
 type Filter = 'all' | 'active' | 'inactive';
 type Sort = 'reset' | 'free' | 'renew' | 'name';
@@ -18,7 +19,6 @@ const RING = 2 * Math.PI * 26;
 
 function Recommendation({ account, kind }: { account: Account | null; kind: LimitKind }) {
   const label = kind === 'total' ? 'برای کار عمومی' : (<>برای کار با <M>Fable</M></>);
-  const color = kind === 'total' ? 'var(--total)' : 'var(--fable)';
   if (!account) {
     return (
       <div className="card rec">
@@ -55,7 +55,7 @@ function Recommendation({ account, kind }: { account: Account | null; kind: Limi
           cy="32"
           r="26"
           fill="none"
-          stroke={color}
+          stroke={usageColor(account ? limitOf(account, kind).usedPct : 0)}
           strokeWidth="7"
           strokeLinecap="round"
           strokeDasharray={`${(RING * free) / 100} ${RING}`}

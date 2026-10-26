@@ -1626,3 +1626,382 @@ html.tray body {
   background: var(--info-fg);
   opacity: 0.6;
 }
+
+/* =====================================================================
+   Liquid Glass layer
+   Translucent surfaces over an ambient backdrop (and, in the desktop app,
+   the macOS window blur behind it). Solid again with Reduce Transparency.
+   ===================================================================== */
+:root {
+  --bg: transparent;
+  --tint: rgba(244, 244, 247, 0.74);
+  --sidebar: rgba(255, 255, 255, 0.34);
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-2: rgba(255, 255, 255, 0.44);
+  --chip: rgba(118, 118, 128, 0.1);
+  --segment: rgba(118, 118, 128, 0.12);
+  --border: rgba(20, 22, 30, 0.1);
+  --border-soft: rgba(20, 22, 30, 0.06);
+  --track: rgba(118, 118, 128, 0.14);
+  --glass: rgba(255, 255, 255, 0.56);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-rim: rgba(255, 255, 255, 0.85);
+  --glass-blur: blur(22px) saturate(180%);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(16, 20, 34, 0.06),
+    0 10px 30px -14px rgba(16, 20, 40, 0.25);
+  --ambient-1: rgba(120, 150, 255, 0.28);
+  --ambient-2: rgba(255, 170, 130, 0.22);
+  --ambient-3: rgba(170, 120, 255, 0.18);
+  --tone-l: 0.62;
+  --tone-text-l: 0.48;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tint: rgba(16, 17, 21, 0.62);
+    --sidebar: rgba(30, 32, 40, 0.38);
+    --surface: rgba(52, 54, 64, 0.55);
+    --surface-2: rgba(40, 42, 50, 0.42);
+    --chip: rgba(255, 255, 255, 0.07);
+    --segment: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-soft: rgba(255, 255, 255, 0.06);
+    --track: rgba(255, 255, 255, 0.09);
+    --glass: rgba(36, 38, 46, 0.5);
+    --glass-strong: rgba(30, 32, 39, 0.86);
+    --glass-rim: rgba(255, 255, 255, 0.12);
+    --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.35),
+      0 14px 34px -16px rgba(0, 0, 0, 0.6);
+    --ambient-1: rgba(80, 110, 255, 0.22);
+    --ambient-2: rgba(255, 120, 80, 0.12);
+    --ambient-3: rgba(150, 90, 255, 0.16);
+    --tone-l: 0.7;
+    --tone-text-l: 0.82;
+  }
+}
+
+html,
+body {
+  background: transparent;
+}
+
+/* The app's own tint sits on the macOS window blur; in a browser it sits on the page. */
+.app {
+  position: relative;
+  background: var(--tint);
+  isolation: isolate;
+}
+.app::before {
+  content: '';
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 35% at 85% 10%, var(--ambient-1), transparent 70%),
+    radial-gradient(35% 30% at 15% 85%, var(--ambient-2), transparent 70%),
+    radial-gradient(30% 30% at 45% 45%, var(--ambient-3), transparent 70%);
+  filter: blur(20px);
+}
+
+.card,
+.sidebar,
+.search,
+.segmented,
+.select-list,
+.popover {
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.card {
+  background: var(--glass);
+  border: 1px solid transparent;
+  box-shadow: var(--glass-shadow);
+  border-radius: 20px;
+}
+.account-card:hover,
+.device-card:hover {
+  border-color: transparent;
+  box-shadow: var(--glass-shadow), 0 18px 40px -18px rgba(16, 20, 40, 0.35);
+  transform: translateY(-1px);
+}
+.account-card,
+.device-card {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.sidebar {
+  background: var(--sidebar);
+  border-inline-end: 1px solid var(--border-soft);
+}
+.nav button[aria-current='page'] {
+  background: var(--glass-strong);
+  box-shadow: inset 0 1px 0 var(--glass-rim), 0 0 0 1px var(--border-soft), 0 4px 14px -8px rgba(16, 20, 40, 0.3);
+}
+.sidebar-foot {
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+}
+
+.search,
+.input,
+.btn:not(.primary):not(.danger):not(.ghost):not(.danger-text) {
+  background: var(--surface);
+  border-color: var(--border-soft);
+  box-shadow: inset 0 1px 0 var(--glass-rim);
+}
+.btn.primary {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 6px 18px -8px rgba(16, 20, 40, 0.55);
+}
+.segmented {
+  background: var(--segment);
+}
+.segmented button[aria-pressed='true'] {
+  background: var(--glass-strong);
+  box-shadow: inset 0 1px 0 var(--glass-rim), 0 1px 3px rgba(16, 20, 40, 0.12);
+}
+
+.overlay {
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+.modal {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--glass-rim), 0 0 0 1px var(--border-soft), 0 30px 80px -20px rgba(0, 0, 0, 0.4);
+  border-radius: 24px;
+}
+.modal-foot {
+  background: transparent;
+  border-radius: 0 0 24px 24px;
+}
+.limit-section,
+.timepicker,
+.mini-account,
+.unmatched,
+.hint {
+  background: var(--surface-2);
+  border-color: var(--border-soft);
+}
+.popover,
+.select-list {
+  background: var(--glass-strong);
+  border-color: var(--border-soft);
+  box-shadow: inset 0 1px 0 var(--glass-rim), 0 20px 50px -16px rgba(0, 0, 0, 0.35);
+}
+
+.stat.warn {
+  background: color-mix(in srgb, var(--warn-bg) 70%, transparent);
+}
+
+/* ---------- usage meter ---------- */
+.meter {
+  --tone: oklch(var(--tone-l) 0.17 var(--tone-h, 150));
+  --tone-soft: oklch(var(--tone-l) 0.17 var(--tone-h, 150) / 0.16);
+  --tone-text: oklch(var(--tone-text-l) 0.15 var(--tone-h, 150));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.meter-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.meter-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tone-text);
+  background: var(--tone-soft);
+}
+.meter-pct {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tone-text);
+  letter-spacing: -0.02em;
+}
+.meter-track {
+  position: relative;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--track);
+  box-shadow: inset 0 1px 2px rgba(16, 20, 40, 0.12);
+}
+.meter-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: 99px;
+  min-width: 12px;
+  /* Right-to-left: the fill grows from the right, lighter toward its leading edge. */
+  background: linear-gradient(to left, oklch(calc(var(--tone-l) + 0.1) 0.14 var(--tone-h, 150)), var(--tone));
+  box-shadow: 0 0 8px -3px var(--tone), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.meter-fill::after {
+  /* glass sheen on the upper half */
+  content: '';
+  position: absolute;
+  inset: 1px 4px 50% 4px;
+  border-radius: 99px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+}
+.meter-tick {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  transform: translateX(50%);
+  border-radius: 2px;
+  background: var(--ink);
+  opacity: 0.45;
+}
+.meter-left {
+  color: var(--tone-text);
+}
+.meter-pace {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: var(--warn-fg);
+  background: color-mix(in srgb, var(--warn-bg) 80%, transparent);
+}
+.meter-pace.urgent {
+  color: var(--danger-fg);
+  background: color-mix(in srgb, var(--danger-bg) 85%, transparent);
+}
+.tag.tone {
+  color: var(--tone-text);
+  background: var(--tone-soft);
+}
+
+/* small bars elsewhere follow the same tone */
+.bar-fill.toned {
+  background: linear-gradient(to left, oklch(calc(var(--tone-l) + 0.08) 0.14 var(--tone-h, 150)), oklch(var(--tone-l) 0.17 var(--tone-h, 150)));
+}
+
+/* ---------- monogram ---------- */
+.monogram {
+  --tone: oklch(var(--tone-l) 0.17 var(--tone-h, 150));
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--tone) var(--deg, 0deg), var(--track) 0);
+}
+.monogram span {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 17px;
+  background: var(--glass-strong);
+  box-shadow: inset 0 1px 0 var(--glass-rim);
+}
+.monogram.off {
+  background: var(--track);
+  opacity: 0.7;
+}
+.top-align {
+  align-items: flex-start;
+}
+
+/* status dot breathes while active */
+.status.on .dot {
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok-dot) 60%, transparent);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok-dot) 0%, transparent);
+  }
+}
+
+.tray-kind {
+  display: flex;
+  color: var(--muted);
+}
+.tray-panel {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-color: var(--border-soft);
+  box-shadow: inset 0 1px 0 var(--glass-rim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status.on .dot {
+    animation: none;
+  }
+  .account-card:hover,
+  .device-card:hover {
+    transform: none;
+  }
+}
+
+/* Reduce Transparency in macOS: solid surfaces, no blur. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --tint: #f4f4f1;
+    --glass: #ffffff;
+    --glass-strong: #ffffff;
+    --sidebar: #ecece6;
+    --surface: #ffffff;
+    --surface-2: #fafaf8;
+  }
+  .app::before {
+    display: none;
+  }
+  .card,
+  .sidebar,
+  .search,
+  .segmented,
+  .select-list,
+  .popover,
+  .modal,
+  .tray-panel,
+  .overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) and (prefers-color-scheme: dark) {
+  :root {
+    --tint: #121316;
+    --glass: #1c1d21;
+    --glass-strong: #1f2025;
+    --sidebar: #17181c;
+    --surface: #26272c;
+    --surface-2: #202126;
+  }
+}
+
+/* Older WebKit without oklch(): the same hue scale in HSL. */
+@supports not (color: oklch(0.5 0.1 100)) {
+  .meter,
+  .monogram {
+    --tone: hsl(var(--tone-h, 150) 62% 44%);
+    --tone-soft: hsl(var(--tone-h, 150) 62% 44% / 0.16);
+    --tone-text: hsl(var(--tone-h, 150) 70% 32%);
+  }
+  .meter-fill,
+  .bar-fill.toned {
+    background: hsl(var(--tone-h, 150) 62% 46%);
+  }
+}

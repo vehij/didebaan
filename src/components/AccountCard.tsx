@@ -1,13 +1,14 @@
-import type { ReactNode } from 'react';
-import { WEEKDAY_NAMES, formatDate, type CalendarKind } from '../lib/jalali';
-import { daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
+import type { CSSProperties, ReactNode } from 'react';
+import { formatDate, type CalendarKind } from '../lib/jalali';
+import { daysUntil, limitOf, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account, Device } from '../lib/types';
 import { Icon } from './Icon';
 import { ProjectTag } from './ProjectInput';
-import { Ago, Bar, Countdown, M } from './ui';
+import { Ago, M } from './ui';
+import { UsageMeter, toneStyle } from './UsageMeter';
 
-const LIMITS: { kind: LimitKind; label: ReactNode; color: string }[] = [
-  { kind: 'total', label: 'لیمیت هفتگی کل', color: 'var(--total)' },
+const LIMITS: { kind: LimitKind; label: ReactNode; icon: ReactNode }[] = [
+  { kind: 'total', label: 'لیمیت هفتگی کل', icon: <Icon name="layers" size={14} /> },
   {
     kind: 'fable',
     label: (
@@ -15,7 +16,7 @@ const LIMITS: { kind: LimitKind; label: ReactNode; color: string }[] = [
         لیمیت هفتگی <M>Fable</M>
       </>
     ),
-    color: 'var(--fable)',
+    icon: <Icon name="sparkle" size={14} />,
   },
 ];
 
@@ -49,6 +50,21 @@ export function RenewalPill({ date, now, ending }: { date: string | null; now: D
   );
 }
 
+/** First letter of the account, ringed in the tone of its fuller limit so the grid reads at a glance. */
+function Monogram({ label, pct }: { label: string; pct: number | null }) {
+  const letter = [...label.trim()][0] ?? '؟';
+  const deg = pct === null ? 0 : Math.round(Math.max(0, Math.min(100, pct)) * 3.6);
+  return (
+    <span
+      className={`monogram ${pct === null ? 'off' : ''}`}
+      style={{ ...(pct === null ? {} : toneStyle(pct)), '--deg': `${deg}deg` } as CSSProperties}
+      aria-hidden="true"
+    >
+      <span>{letter}</span>
+    </span>
+  );
+}
+
 export function StatusPill({ active }: { active: boolean }) {
   return (
     <span className={`status ${active ? 'on' : 'off'}`}>
@@ -76,7 +92,9 @@ export function AccountCard({
   return (
     <button type="button" className="card account-card" onClick={onEdit} aria-label={`ویرایش ${account.label}`}>
       <div className="row-between top">
-        <div className="stack-2 min0">
+        <div className="row gap-12 min0 top-align">
+          <Monogram label={account.label} pct={account.active ? Math.max(account.total.usedPct, account.fable.usedPct) : null} />
+          <div className="stack-2 min0">
           <div className="row wrap gap-8">
             <span className="account-name">{account.label}</span>
             <M className="plan">{account.plan}</M>
@@ -87,37 +105,29 @@ export function AccountCard({
             </div>
           )}
           <ProjectTag project={account.project} />
+          </div>
         </div>
         <StatusPill active={account.active} />
       </div>
 
       {account.active ? (
         <div className="stack-16">
-          {LIMITS.map(({ kind, label, color }) => {
-            const limit = limitOf(account, kind);
-            const s = scheduleOf(account, kind);
-            return (
-              <div key={kind} className="stack-7">
-                <div className="row-between">
-                  <span className="limit-label">
-                    <span className="swatch" style={{ background: color }} />
-                    {label}
-                  </span>
-                  <span className="row gap-8">
-                    {limit.usedPct >= warnAt && <span className="tag danger">نزدیک سقف</span>}
-                    <M className="pct">{limit.usedPct}%</M>
-                  </span>
-                </div>
-                <Bar pct={limit.usedPct} color={color} />
-                <div className="muted xsmall">
-                  ریست {WEEKDAY_NAMES[s.weekday]} <M>{s.time}</M> · <Countdown to={nextReset(s, now)} now={now} /> دیگر
-                </div>
-                {account.remote && account.remote[kind === 'total' ? 'hasWeekly' : 'hasFable'] === false && (
+          {LIMITS.map(({ kind, label, icon }) => (
+            <UsageMeter
+              key={kind}
+              label={label}
+              icon={icon}
+              pct={limitOf(account, kind).usedPct}
+              schedule={scheduleOf(account, kind)}
+              now={now}
+              warnAt={warnAt}
+              note={
+                account.remote && account.remote[kind === 'total' ? 'hasWeekly' : 'hasFable'] === false ? (
                   <div className="xsmall warn-text">این عدد از افزونه نیامد؛ صفحه‌ی Usage را در Chrome همان لپ‌تاپ باز کن یا دستی واردش کن.</div>
-                )}
-              </div>
-            );
-          })}
+                ) : undefined
+              }
+            />
+          ))}
         </div>
       ) : (
         <div className="inactive-box">

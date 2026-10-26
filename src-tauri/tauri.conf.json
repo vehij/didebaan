@@ -19,7 +19,14 @@
         "minWidth": 960,
         "minHeight": 620,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "transparent": true,
+        "windowEffects": {
+          "effects": [
+            "sidebar"
+          ],
+          "state": "followsWindowActiveState"
+        }
       },
       {
         "label": "tray",
@@ -33,7 +40,14 @@
         "skipTaskbar": true,
         "transparent": true,
         "focus": true,
-        "shadow": true
+        "shadow": true,
+        "windowEffects": {
+          "effects": [
+            "popover"
+          ],
+          "state": "active",
+          "radius": 14
+        }
       }
     ],
     "security": {

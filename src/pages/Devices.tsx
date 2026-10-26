@@ -185,14 +185,14 @@ export function Devices() {
                                 <span>کل</span>
                                 <M className="strong ink">{a.total.usedPct}%</M>
                               </div>
-                              <Bar pct={a.total.usedPct} color="var(--total)" height={5} />
+                              <Bar pct={a.total.usedPct} height={6} />
                             </div>
                             <div className="stack-4">
                               <div className="row-between xsmall muted">
                                 <M>Fable</M>
                                 <M className="strong ink">{a.fable.usedPct}%</M>
                               </div>
-                              <Bar pct={a.fable.usedPct} color="var(--fable)" height={5} />
+                              <Bar pct={a.fable.usedPct} height={6} />
                             </div>
                           </div>
                         )}
