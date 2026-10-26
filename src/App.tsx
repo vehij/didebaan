@@ -49,7 +49,18 @@ export function App() {
       </div>
     );
   }
-  if (!ready) return <div className="loading">در حال بارگذاری…</div>;
+  if (!ready) {
+    return (
+      <div className="loading" role="status" aria-label="در حال بارگذاری">
+        <div className="loader">
+          <div className="loader-eye">
+            <Icon name="eye" size={30} />
+          </div>
+          <div className="loader-bar" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">

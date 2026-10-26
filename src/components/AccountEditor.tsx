@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { WEEKDAY_NAMES, WEEK_ORDER, formatDate, formatTime, ymd } from '../lib/jalali';
 import { deleteAccount, newId, saveAccount, updateSettings, useDb } from '../lib/store';
 import { nextReset, type Schedule } from '../lib/time';
@@ -7,6 +7,7 @@ import { DatePicker } from './DatePicker';
 import { Icon } from './Icon';
 import { ProjectInput } from './ProjectInput';
 import { Select } from './Select';
+import { toneStyle } from './UsageMeter';
 import { TimePicker } from './TimePicker';
 import { ConfirmDelete, M, Modal, Segmented } from './ui';
 
@@ -33,7 +34,7 @@ export function blankAccount(): Account {
 
 function LimitSection({
   title,
-  color,
+  icon,
   limit,
   warnAt,
   onChange,
@@ -44,7 +45,7 @@ function LimitSection({
 }: {
   calendar: 'jalali' | 'gregorian';
   title: ReactNode;
-  color: string;
+  icon: ReactNode;
   limit: WeeklyLimit;
   warnAt: number;
   onChange: (l: WeeklyLimit) => void;
@@ -59,7 +60,9 @@ function LimitSection({
     <section className="limit-section">
       <div className="row-between">
         <h3 className="row gap-8">
-          <span className="swatch lg" style={{ background: color }} />
+          <span className="meter-icon" style={toneStyle(limit.usedPct)}>
+            {icon}
+          </span>
           {title}
         </h3>
         {limit.usedPct >= warnAt && <span className="tag danger">نزدیک سقف</span>}
@@ -86,13 +89,13 @@ function LimitSection({
         </div>
         <input
           id={`${id}-range`}
-          className="range"
           type="range"
           min={0}
           max={100}
           value={limit.usedPct}
           onChange={(e) => setPct(Number(e.target.value))}
-          style={{ accentColor: color }}
+          className="range toned"
+          style={{ ...toneStyle(limit.usedPct), '--pct': `${limit.usedPct}%` } as CSSProperties}
         />
       </div>
 
@@ -252,7 +255,7 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
 
       <LimitSection
         title="لیمیت هفتگی کل"
-        color="var(--total)"
+        icon={<Icon name="layers" size={14} />}
         limit={draft.total}
         calendar={calendar}
         warnAt={db.settings.warnAt}
@@ -265,7 +268,7 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
             لیمیت هفتگی <M>Fable</M>
           </>
         }
-        color="var(--fable)"
+        icon={<Icon name="sparkle" size={14} />}
         limit={draft.fable}
         calendar={calendar}
         warnAt={db.settings.warnAt}

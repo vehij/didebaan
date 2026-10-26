@@ -135,7 +135,9 @@ export function Settings() {
               </span>
               <div className="row gap-8">
                 <button type="button" className="btn" disabled={sync.busy} onClick={() => syncNow()}>
-                  <Icon name="refresh" size={16} />
+                  <span className={sync.busy ? 'spin' : undefined}>
+                    <Icon name="refresh" size={16} />
+                  </span>
                   {sync.busy ? 'در حال همگام‌سازی…' : 'همگام‌سازی الان'}
                 </button>
                 {confirmOff ? (
@@ -263,7 +265,9 @@ export function Settings() {
               </button>
             ) : (
               <button type="button" className="btn" disabled={update.status === 'checking' || update.status === 'downloading'} onClick={() => checkForUpdate()}>
-                <Icon name="refresh" size={16} />
+                <span className={update.status === 'checking' ? 'spin' : undefined}>
+                  <Icon name="refresh" size={16} />
+                </span>
                 بررسی نسخه‌ی جدید
               </button>
             )}

@@ -19,7 +19,7 @@ export function UpdateBanner() {
           به‌روزرسانی و باز کردن دوباره
         </button>
       ) : (
-        <span className="small strong">
+        <span className="small strong downloading">
           در حال دانلود{u.progress !== null && <> · <M>{u.progress}%</M></>}…
         </span>
       )}
