@@ -99,7 +99,7 @@ export interface Database {
 }
 
 /** The project's own Cloudflare Worker (see sync/). */
-export const DEFAULT_SYNC_URL = 'https://didebaan-sync.workers.dev';
+export const DEFAULT_SYNC_URL = 'https://didebaan-sync.yaghobian.workers.dev';
 
 export const emptyDatabase = (): Database => ({
   version: 1,
