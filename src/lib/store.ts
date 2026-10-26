@@ -141,9 +141,10 @@ export function saveAccount(account: Account) {
     ? prev.total.usedPct !== account.total.usedPct || prev.fable.usedPct !== account.fable.usedPct
     : account.total.usedPct > 0 || account.fable.usedPct > 0;
   const now = new Date().toISOString();
-  const next: Account = usageChanged
+  let next: Account = usageChanged
     ? { ...account, total: { ...account.total, updatedAt: now }, fable: { ...account.fable, updatedAt: now } }
     : account;
+  if ((prev?.renewalDate ?? null) !== account.renewalDate) next = { ...next, renewalUpdatedAt: now };
   commit({
     ...db,
     accounts: prev ? db.accounts.map((a) => (a.id === account.id ? next : a)) : [...db.accounts, next],

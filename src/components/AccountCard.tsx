@@ -29,10 +29,17 @@ const PRODUCT_COLORS: Record<string, string> = {
 
 export const productColor = (name: string) => PRODUCT_COLORS[name] ?? 'var(--off-dot)';
 
-export function RenewalPill({ date, now }: { date: string | null; now: Date }) {
+export function RenewalPill({ date, now, ending }: { date: string | null; now: Date; ending?: boolean }) {
   if (!date) return <span className="pill">تاریخ تمدید ثبت نشده</span>;
   const days = daysUntil(date, now);
   if (days < 0) return <span className="pill danger">منقضی شده</span>;
+  if (ending) {
+    return (
+      <span className="pill danger" title="تمدید خودکار خاموش است">
+        پایان اشتراک · <M>{days}</M> روز
+      </span>
+    );
+  }
   if (days === 0) return <span className="pill warn">امروز</span>;
   return (
     <span className={`pill ${days <= 5 ? 'warn' : ''}`}>
@@ -174,7 +181,7 @@ export function AccountCard({
               تمدید <M>{formatDate(account.renewalDate, calendar)}</M>
             </span>
           )}
-          <RenewalPill date={account.renewalDate} now={now} />
+          <RenewalPill date={account.renewalDate} now={now} ending={account.remote?.autoRenew === false} />
         </div>
       </div>
     </button>

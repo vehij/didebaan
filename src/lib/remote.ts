@@ -10,6 +10,7 @@ export interface RemoteReport {
   weekly: { pct: number; resetsAt: string | null } | null;
   fable: { pct: number; resetsAt: string | null } | null;
   products: { name: string; pct: number }[];
+  renewal?: { date: string; autoRenew: boolean } | null;
   device: string | null;
   capturedAt: string;
   receivedAt: string;
@@ -58,6 +59,7 @@ export function applyRemoteReports(db: Database, reports: RemoteReport[], newId:
     const total = withReading(a.total, r.weekly, r.capturedAt);
     let fable = withReading(a.fable, r.fable, r.capturedAt);
     const sameReset = fable.resetWeekday === total.resetWeekday && fable.resetTime === total.resetTime;
+    const renewalFromBilling = r.renewal && (!a.renewalUpdatedAt || a.renewalUpdatedAt < r.capturedAt) ? r.renewal.date : null;
     const plan = PLANS.find((p) => p.toLowerCase() === r.plan?.toLowerCase()) as Plan | undefined;
     const next: Account = {
       ...a,
@@ -65,7 +67,15 @@ export function applyRemoteReports(db: Database, reports: RemoteReport[], newId:
       fable,
       fableSameReset: sameReset,
       plan: plan ?? a.plan,
-      remote: { capturedAt: r.capturedAt, receivedAt: r.receivedAt, device: r.device, orgName: r.orgName, products: r.products },
+      renewalDate: renewalFromBilling ?? a.renewalDate,
+      remote: {
+        capturedAt: r.capturedAt,
+        receivedAt: r.receivedAt,
+        device: r.device,
+        orgName: r.orgName,
+        products: r.products,
+        autoRenew: r.renewal ? r.renewal.autoRenew : (a.remote?.autoRenew ?? null),
+      },
     };
     if (total.usedPct !== a.total.usedPct || fable.usedPct !== a.fable.usedPct) {
       usage.push({ id: newId(), accountId: a.id, at: r.capturedAt, total: total.usedPct, fable: fable.usedPct, source: 'sync' });

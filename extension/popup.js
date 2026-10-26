@@ -7,10 +7,25 @@ const ago = (iso) => {
   return `${Math.round(min / 60)} ساعت پیش`;
 };
 
+const DAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
+const pad = (n) => String(n).padStart(2, '0');
+
+function resetText(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `ریست ${DAYS[d.getDay()]} <span class="mono">${pad(d.getHours())}:${pad(d.getMinutes())}</span>`;
+}
+
 function bar(label, reading, color) {
   if (!reading) return '';
   return `<div class="line"><span>${label}</span><span class="mono">${reading.pct}%</span></div>
-    <div class="bar"><span style="width:${Math.min(100, reading.pct)}%;background:${color}"></span></div>`;
+    <div class="bar"><span style="width:${Math.min(100, reading.pct)}%;background:${color}"></span></div>
+    <div class="line muted">${resetText(reading.resetsAt)}</div>`;
+}
+
+function renewalLine(renewal) {
+  if (!renewal) return '<div class="line muted">تاریخ تمدید: صفحه‌ی Billing را یک بار باز کن</div>';
+  return `<div class="line"><span>${renewal.autoRenew ? 'تمدید خودکار' : 'پایان اشتراک'}</span><span class="mono">${renewal.date.replaceAll('-', '/')}</span></div>`;
 }
 
 function escapeHtml(s) {
@@ -35,6 +50,7 @@ async function render() {
         <div class="who"><span class="mono">${escapeHtml(r.email)}</span><span class="muted">${escapeHtml(r.plan ?? '')}</span></div>
         ${bar('لیمیت هفتگی کل', r.weekly, 'var(--total)')}
         ${bar('Fable', r.fable, 'var(--fable)')}
+        ${renewalLine(r.renewal)}
       </div>`,
     )
     .join('');

@@ -146,3 +146,33 @@ export function parseUsagePage(lines, now = new Date()) {
   }
   return { weekly: block('this week'), fable: block('fable'), products };
 }
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/** "Nov 14, 2026" or "November 14 2026" → "2026-11-14". */
+export function parseEnglishDate(text) {
+  const m = /([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})/.exec(text);
+  if (!m) return null;
+  const month = MONTHS.indexOf(m[1].slice(0, 3).toLowerCase());
+  const day = Number(m[2]);
+  if (month < 0 || day < 1 || day > 31) return null;
+  return `${m[3]}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/**
+ * Reads the Settings › Billing page text. Only the subscription's next date is taken —
+ * never card details, amounts or invoices.
+ */
+export function parseBillingPage(text) {
+  const renew = /(?:auto[-\s]?renew|renews?)\s+on\s+([A-Za-z]{3,9}\.?\s+\d{1,2},?\s+\d{4})/i.exec(text);
+  if (renew) {
+    const date = parseEnglishDate(renew[1]);
+    if (date) return { date, autoRenew: true };
+  }
+  const ends = /(?:will\s+(?:end|expire|be\s+cancell?ed)|ends|expires|access\s+until)\s+on\s+([A-Za-z]{3,9}\.?\s+\d{1,2},?\s+\d{4})/i.exec(text);
+  if (ends) {
+    const date = parseEnglishDate(ends[1]);
+    if (date) return { date, autoRenew: false };
+  }
+  return null;
+}

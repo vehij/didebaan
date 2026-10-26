@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Didebaan Companion",
   "short_name": "دیده‌بان همراه",
-  "version": "0.5.0",
-  "description": "Sends this browser's claude.ai weekly usage (all models and Fable) to your Didebaan app every two hours.",
+  "version": "0.6.0",
+  "description": "Sends this browser's claude.ai weekly usage (all models and Fable), reset times and subscription renewal date to your Didebaan app.",
   "permissions": [
     "alarms",
     "storage"
@@ -19,7 +19,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://claude.ai/settings/usage*"
+        "https://claude.ai/settings/usage*",
+        "https://claude.ai/settings/billing*"
       ],
       "js": [
         "content.js"

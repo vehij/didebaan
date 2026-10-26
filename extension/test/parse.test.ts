@@ -80,3 +80,29 @@ describe('helpers', () => {
     expect(skeleton({ name: 'Vahid', n: 3, at: '2026-10-26T10:00:00Z' })).toEqual({ name: 'string', n: 3, at: '2026-10-26T10:00:00Z' });
   });
 });
+
+describe('billing page', async () => {
+  // @ts-expect-error plain JS module shipped as-is in the extension
+  const { parseBillingPage, parseEnglishDate } = await import('../parse.js');
+
+  it('reads the auto-renew date and nothing else', () => {
+    const text = `Max plan
+20x more usage than Pro
+Your subscription will auto renew on Nov 14, 2026.
+Payment
+Visa •••• 6679 Default
+Expires 05/2031
+Invoices
+Oct 14, 2026 $100.01 Paid`;
+    expect(parseBillingPage(text)).toEqual({ date: '2026-11-14', autoRenew: true });
+  });
+
+  it('recognizes a cancelled plan’s end date', () => {
+    expect(parseBillingPage('Your subscription will end on December 3, 2026.')).toEqual({ date: '2026-12-03', autoRenew: false });
+  });
+
+  it('ignores pages without a subscription date', () => {
+    expect(parseBillingPage('Expires 05/2031 Oct 14, 2026 Paid')).toBeNull();
+    expect(parseEnglishDate('Foo 14, 2026')).toBeNull();
+  });
+});

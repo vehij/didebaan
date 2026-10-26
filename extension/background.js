@@ -45,7 +45,7 @@ function defaultDevice() {
 
 /** Reads every organization's usage from claude.ai and posts one report per organization. */
 export async function poll() {
-  const { config, device, page } = await chrome.storage.local.get(['config', 'device', 'page']);
+  const { config, device, page, billing } = await chrome.storage.local.get(['config', 'device', 'page', 'billing']);
   if (!config) return setStatus({ state: 'not-paired' });
   try {
     const orgs = await getJSON('/api/organizations');
@@ -75,6 +75,7 @@ export async function poll() {
         weekly: reading.weekly ?? fromPage?.weekly ?? null,
         fable: reading.fable ?? fromPage?.fable ?? null,
         products: reading.products.length ? reading.products : (fromPage?.products ?? []),
+        renewal: billing?.renewal ?? null,
         device: device || defaultDevice(),
         capturedAt: new Date().toISOString(),
       };
@@ -93,10 +94,19 @@ export async function poll() {
 /** The usage page was opened: its text is the most complete source, so send it right away. */
 async function fromPage(reading) {
   await chrome.storage.local.set({ page: { at: new Date().toISOString(), reading } });
-  const { config, device, email } = await chrome.storage.local.get(['config', 'device', 'email']);
+  const { config, device, email, billing } = await chrome.storage.local.get(['config', 'device', 'email', 'billing']);
   if (!config || !email || (!reading.weekly && !reading.fable)) return poll();
   try {
-    const report = { email, orgId: null, orgName: null, plan: null, ...reading, device: device || defaultDevice(), capturedAt: new Date().toISOString() };
+    const report = {
+      email,
+      orgId: null,
+      orgName: null,
+      plan: null,
+      ...reading,
+      renewal: billing?.renewal ?? null,
+      device: device || defaultDevice(),
+      capturedAt: new Date().toISOString(),
+    };
     await send(config, report);
     await setStatus({ state: 'ok', reports: [report] });
   } catch (e) {
@@ -132,6 +142,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   }
   if (msg?.type === 'page-usage') {
     fromPage(msg.reading);
+  }
+  if (msg?.type === 'page-billing') {
+    // The Billing page has no usage numbers, so keep the date and send it with a fresh reading.
+    chrome.storage.local.set({ billing: { at: new Date().toISOString(), renewal: msg.renewal } }).then(() => poll());
   }
   return false;
 });

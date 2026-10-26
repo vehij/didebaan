@@ -27,6 +27,12 @@ describe('parseReport', () => {
     expect(parseReport('x')).toBeNull();
   });
 
+  it('keeps a well-formed renewal date only', () => {
+    expect(parseReport({ ...base, renewal: { date: '2026-11-14', autoRenew: true } })!.renewal).toEqual({ date: '2026-11-14', autoRenew: true });
+    expect(parseReport({ ...base, renewal: { date: 'Nov 14' } })!.renewal).toBeNull();
+    expect(parseReport(base)!.renewal).toBeNull();
+  });
+
   it('clamps percentages and drops malformed products', () => {
     const r = parseReport({ ...base, weekly: { pct: 140 }, products: [{ name: 'x' }, { pct: 3 }, 'y'] })!;
     expect(r.weekly).toEqual({ pct: 100, resetsAt: null });

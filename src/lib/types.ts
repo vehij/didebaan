@@ -35,6 +35,8 @@ export interface RemoteInfo {
   orgName: string | null;
   /** Share of this week's usage per product (Claude Code, Chats, Cowork, Other). */
   products: { name: string; pct: number }[];
+  /** False when the Billing page says the subscription ends instead of renewing. */
+  autoRenew?: boolean | null;
 }
 
 export interface Account {
@@ -52,6 +54,8 @@ export interface Account {
   fableSameReset: boolean;
   /** Gregorian date of the next renewal, "YYYY-MM-DD", or null when unknown. */
   renewalDate: string | null;
+  /** When renewalDate was last set by hand; a later Billing-page reading replaces it. */
+  renewalUpdatedAt?: string | null;
   remindDaysBefore: number;
   note: string;
   createdAt: string;

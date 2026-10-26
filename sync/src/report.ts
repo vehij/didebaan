@@ -7,6 +7,8 @@ export interface UsageReport {
   weekly: LimitReading | null;
   fable: LimitReading | null;
   products: { name: string; pct: number }[];
+  /** Next renewal (or end) date from the Billing page, "YYYY-MM-DD". */
+  renewal: { date: string; autoRenew: boolean } | null;
   device: string | null;
   capturedAt: string;
 }
@@ -39,6 +41,13 @@ function limit(v: unknown): LimitReading | null {
   return p === null ? null : { pct: p, resetsAt: iso(o.resetsAt) };
 }
 
+function renewal(v: unknown): UsageReport['renewal'] {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(o.date) || Number.isNaN(Date.parse(o.date))) return null;
+  return { date: o.date, autoRenew: o.autoRenew !== false };
+}
+
 /** Validates and normalizes an incoming report; returns null if it is unusable. */
 export function parseReport(body: unknown): UsageReport | null {
   if (!body || typeof body !== 'object') return null;
@@ -63,6 +72,7 @@ export function parseReport(body: unknown): UsageReport | null {
     weekly,
     fable,
     products,
+    renewal: renewal(b.renewal),
     device: str(b.device, 80),
     capturedAt,
   };

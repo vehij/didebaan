@@ -65,6 +65,15 @@ describe('applyRemoteReports', () => {
     expect(db.accounts[0].fable.usedPct).toBe(75);
   });
 
+  it('takes the renewal date from the Billing page unless it was set by hand later', () => {
+    const fromBilling = applyRemoteReports({ ...emptyDatabase(), accounts: [account({ renewalDate: '2026-11-01' })] }, [report({ renewal: { date: '2026-11-14', autoRenew: true } })], id);
+    expect(fromBilling.db.accounts[0].renewalDate).toBe('2026-11-14');
+    const typed = account({ renewalDate: '2026-12-01', renewalUpdatedAt: '2026-10-26T11:00:00.000Z' });
+    const kept = applyRemoteReports({ ...emptyDatabase(), accounts: [typed] }, [report({ renewal: { date: '2026-11-14', autoRenew: false } })], id);
+    expect(kept.db.accounts[0].renewalDate).toBe('2026-12-01');
+    expect(kept.db.accounts[0].remote?.autoRenew).toBe(false);
+  });
+
   it('lists reports with no matching account', () => {
     const { unmatched } = applyRemoteReports({ ...emptyDatabase(), accounts: [account()] }, [report({ email: 'other@example.com' })], id);
     expect(unmatched.map((r) => r.email)).toEqual(['other@example.com']);
