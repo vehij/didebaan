@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AccountEditor } from './components/AccountEditor';
 import { Icon, type IconName } from './components/Icon';
 import { M } from './components/ui';
+import { isTauri } from './lib/storage';
 import { useDb, useStoreStatus } from './lib/store';
 import { Dashboard } from './pages/Dashboard';
 import { Devices } from './pages/Devices';
@@ -16,6 +17,20 @@ export function App() {
   const [view, setView] = useState<View>('dashboard');
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const thisDevice = db.devices.find((d) => d.id === db.settings.thisDeviceId);
+
+  // Rows in the menu bar panel open the account editor here.
+  useEffect(() => {
+    if (!isTauri()) return;
+    const off = import('@tauri-apps/api/event').then(({ listen }) =>
+      listen<string>('open-account', (e) => {
+        setView('dashboard');
+        setEditing(e.payload);
+      }),
+    );
+    return () => {
+      off.then((f) => f());
+    };
+  }, []);
 
   const nav: { id: View; label: string; icon: IconName; count?: number }[] = [
     { id: 'dashboard', label: 'داشبورد', icon: 'grid', count: db.accounts.length },

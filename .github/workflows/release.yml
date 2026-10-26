@@ -1,0 +1,52 @@
+name: Release macOS app
+
+# Builds a universal (Apple Silicon + Intel) .dmg and publishes it on the Releases page.
+# Runs when a version tag like v0.2.0 is pushed, or by hand from the Actions tab.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - run: npm ci
+      - run: npm test
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target universal-apple-darwin
+          tagName: v__VERSION__
+          releaseName: 'دیده‌بان v__VERSION__'
+          releaseDraft: false
+          prerelease: false
+          releaseBody: |
+            ## نصب
+
+            1. فایل `.dmg` را از بخش **Assets** پایین همین صفحه دانلود کن.
+            2. بازش کن و آیکون **Didebaan** را روی پوشه‌ی **Applications** بکش.
+            3. اپ را از Applications باز کن. بار اول مک می‌گوید نمی‌تواند سازنده را تأیید کند؛ **Done** را بزن، بعد به
+               **System Settings › Privacy & Security** برو و پایین صفحه، کنار پیام Didebaan، روی **Open Anyway** بزن.
+
+            این کار فقط یک بار لازم است. بعد از آن دیده‌بان مثل هر اپ دیگری باز می‌شود و آیکونش در منوبار بالای صفحه هم هست.

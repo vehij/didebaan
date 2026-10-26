@@ -8,6 +8,8 @@ export const newId = () => crypto.randomUUID();
 let db: Database = emptyDatabase();
 let ready = false;
 let saveError: string | null = null;
+/** The menu bar panel only reads; the dashboard window is the single writer. */
+let readOnly = false;
 let loadError: string | null = null;
 const listeners = new Set<() => void>();
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -40,7 +42,7 @@ function commit(next: Database) {
   if (next === db) return;
   db = next;
   emit();
-  scheduleSave();
+  if (!readOnly) scheduleSave();
 }
 
 /** Fills in fields added in later versions so older files keep loading. */
@@ -53,11 +55,13 @@ export function normalize(raw: unknown): Database {
     devices: Array.isArray(r.devices) ? r.devices : [],
     accounts: Array.isArray(r.accounts) ? r.accounts : [],
     usage: Array.isArray(r.usage) ? r.usage : [],
-    settings: { ...base.settings, ...(r.settings ?? {}) },
+    settings: { ...base.settings, ...(r.settings ?? {}), notify: { ...base.settings.notify, ...(r.settings?.notify ?? {}) } },
+    notified: Array.isArray(r.notified) ? r.notified : [],
   };
 }
 
-export async function initStore() {
+export async function initStore(options: { readOnly?: boolean; onTick?: () => void } = {}) {
+  readOnly = !!options.readOnly;
   try {
     const raw = await loadRaw();
     db = raw ? normalize(JSON.parse(raw)) : emptyDatabase();
@@ -70,7 +74,24 @@ export async function initStore() {
   ready = true;
   commit(applyResets(db, new Date(), newId));
   emit();
-  setInterval(() => commit(applyResets(db, new Date(), newId)), 30_000);
+  options.onTick?.();
+  setInterval(() => {
+    commit(applyResets(db, new Date(), newId));
+    options.onTick?.();
+  }, 30_000);
+}
+
+/** Re-reads the file from disk; used by the menu bar panel each time it opens. */
+export async function reloadStore() {
+  const raw = await loadRaw();
+  if (raw) commit(applyResets(normalize(JSON.parse(raw)), new Date(), newId));
+}
+
+const MAX_NOTIFIED = 500;
+
+export function markNotified(keys: string[]) {
+  if (keys.length === 0) return;
+  commit({ ...db, notified: [...db.notified, ...keys].slice(-MAX_NOTIFIED) });
 }
 
 function subscribe(l: () => void) {
@@ -125,6 +146,10 @@ export function deleteDevice(id: string) {
     accounts: db.accounts.map((a) => (a.deviceIds.includes(id) ? { ...a, deviceIds: a.deviceIds.filter((x) => x !== id) } : a)),
     settings: db.settings.thisDeviceId === id ? { ...db.settings, thisDeviceId: null } : db.settings,
   });
+}
+
+export function updateNotifySettings(patch: Partial<Settings['notify']>) {
+  commit({ ...db, settings: { ...db.settings, notify: { ...db.settings.notify, ...patch } } });
 }
 
 export function updateSettings(patch: Partial<Settings>) {

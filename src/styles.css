@@ -1082,3 +1082,133 @@ tbody tr:last-child td {
     padding: 40px 24px 48px;
   }
 }
+
+/* ---------- menu bar panel ---------- */
+html.tray,
+html.tray body {
+  background: transparent;
+  overflow: hidden;
+}
+.tray-panel {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.tray-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.brand-mark.sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+.icon-btn.sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+.tray-picks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 14px 4px;
+}
+.tray-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+.tray-pick.total {
+  background: color-mix(in srgb, var(--total) 12%, var(--surface));
+  color: color-mix(in srgb, var(--total) 70%, var(--ink));
+}
+.tray-pick.fable {
+  background: color-mix(in srgb, var(--fable) 12%, var(--surface));
+  color: color-mix(in srgb, var(--fable) 70%, var(--ink));
+}
+.tray-pick strong {
+  color: var(--ink);
+}
+.tray-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 0;
+}
+.tray-caption {
+  padding: 4px 8px;
+}
+.tray-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: start;
+  cursor: pointer;
+}
+.tray-row:hover {
+  background: var(--chip);
+}
+.tray-pct {
+  width: 36px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: left;
+}
+.tray-legend {
+  padding: 6px 8px 10px;
+}
+.tray-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.tray-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.tray-alert.danger {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+.tray-alert.warn {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+.tray-empty {
+  flex: 1;
+  padding: 24px;
+  text-align: center;
+}
+.tray-foot {
+  display: flex;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.tray-foot .btn {
+  min-height: 40px;
+}

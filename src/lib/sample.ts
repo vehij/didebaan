@@ -54,6 +54,6 @@ export function sampleDatabase(newId: () => string, now = new Date()): Database 
       account('پروژه مشتری', 'client.x@example.com', 'Max 5x', [mbp.id], 18, 55, 5, '13:15', 22),
       account('تست و آزمایش', 'lab.test@example.com', 'Pro', [vps.id], 0, 0, 1, '12:00', -6, false),
     ],
-    settings: { warnAt: 85, thisDeviceId: mbp.id },
+    settings: { ...emptyDatabase().settings, thisDeviceId: mbp.id },
   };
 }

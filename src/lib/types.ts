@@ -53,9 +53,19 @@ export interface UsageEntry {
   source: 'manual' | 'reset';
 }
 
+export interface NotifySettings {
+  /** A limit crosses the warning threshold. */
+  limit: boolean;
+  /** A weekly limit was reset. */
+  reset: boolean;
+  /** A renewal is within the account's reminder window. */
+  renewal: boolean;
+}
+
 export interface Settings {
   warnAt: number;
   thisDeviceId: string | null;
+  notify: NotifySettings;
 }
 
 export interface Database {
@@ -64,6 +74,8 @@ export interface Database {
   accounts: Account[];
   usage: UsageEntry[];
   settings: Settings;
+  /** Keys of notifications already shown, so each one fires only once. */
+  notified: string[];
 }
 
 export const emptyDatabase = (): Database => ({
@@ -71,5 +83,6 @@ export const emptyDatabase = (): Database => ({
   devices: [],
   accounts: [],
   usage: [],
-  settings: { warnAt: 85, thisDeviceId: null },
+  settings: { warnAt: 85, thisDeviceId: null, notify: { limit: true, reset: true, renewal: true } },
+  notified: [],
 });
