@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { AccountCard } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
-import { Countdown, M, Segmented } from '../components/ui';
+import { Ago, Countdown, M, Segmented } from '../components/ui';
+import { syncNow, useSyncState } from '../lib/sync';
 import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
 import { allProjects, replaceDatabase, newId, useDb } from '../lib/store';
 import { ALL_PROJECTS, NO_PROJECT, inProject } from '../lib/projects';
@@ -66,6 +67,35 @@ function Recommendation({ account, kind }: { account: Account | null; kind: Limi
         </text>
       </svg>
     </div>
+  );
+}
+
+/** Pulls the latest extension reports now; shows how fresh the last pull is. */
+function SyncButton({ now }: { now: Date }) {
+  const sync = useSyncState();
+  return (
+    <button
+      type="button"
+      className={`sync-btn ${sync.error ? 'failed' : ''}`}
+      onClick={() => syncNow()}
+      disabled={sync.busy}
+      title={sync.error ? `آخرین تلاش ناموفق بود: ${sync.error}` : 'گرفتن آخرین عددها از افزونه‌ها'}
+    >
+      <span className={sync.busy ? 'spin' : undefined}>
+        <Icon name="refresh" size={15} />
+      </span>
+      {sync.busy ? (
+        'در حال همگام‌سازی…'
+      ) : sync.error ? (
+        'همگام نشد؛ دوباره'
+      ) : sync.lastSyncAt ? (
+        <>
+          همگام‌سازی · <Ago iso={sync.lastSyncAt} now={now} />
+        </>
+      ) : (
+        'همگام‌سازی'
+      )}
+    </button>
   );
 }
 
@@ -219,7 +249,10 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
 
           <section className="stack-14">
             <div className="row-between wrap gap-12">
-              <h2 className="section-title">اکانت‌ها</h2>
+              <div className="row wrap gap-12">
+                <h2 className="section-title">اکانت‌ها</h2>
+                {db.settings.sync.key && <SyncButton now={now} />}
+              </div>
               <div className="row wrap gap-10">
                 <Segmented<Filter>
                   label="فیلتر وضعیت"
