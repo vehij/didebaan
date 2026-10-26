@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { isTauri } from './storage';
-import { flushSave, getDb, markNotified } from './store';
+import { flushSave } from './store';
 import type { Update } from '@tauri-apps/plugin-updater';
 
 export type UpdateState =
@@ -46,13 +46,8 @@ export async function checkForUpdate({ silent = false } = {}): Promise<void> {
     }
     pending = update;
     const notes = whatsNew(update.body);
+    // The native side sends the notification (it keeps checking while this window is closed).
     set({ status: 'available', version: update.version, notes });
-    const key = `update:${update.version}`;
-    if (!getDb().notified.includes(key)) {
-      const { sendNotification } = await import('./notify');
-      await sendNotification('نسخه‌ی جدید دیده‌بان', `نسخه‌ی ${update.version} آماده است. از داشبورد به‌روزرسانی کن.`);
-      markNotified([key]);
-    }
   } catch (e) {
     // A silent background check should not put an error on screen, e.g. when offline.
     if (!silent) set({ status: 'error', message: String(e) });
@@ -81,11 +76,22 @@ export async function installUpdate(): Promise<void> {
   }
 }
 
-const SIX_HOURS = 6 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+let lastCheck = 0;
 
-/** Checks shortly after launch and then every six hours while the app runs. */
+const quietCheck = () => {
+  lastCheck = Date.now();
+  return checkForUpdate({ silent: true });
+};
+
+/**
+ * Checks shortly after launch, hourly, whenever the window comes back, and when the native side
+ * (which keeps checking while the window is closed) reports a new version.
+ */
 export function startUpdateChecks() {
   if (!isTauri()) return;
-  setTimeout(() => checkForUpdate({ silent: true }), 5_000);
-  setInterval(() => checkForUpdate({ silent: true }), SIX_HOURS);
+  setTimeout(quietCheck, 5_000);
+  setInterval(quietCheck, HOUR);
+  window.addEventListener('focus', () => Date.now() - lastCheck > 10 * 60 * 1000 && quietCheck());
+  import('@tauri-apps/api/event').then(({ listen }) => listen('update-available', () => quietCheck()));
 }

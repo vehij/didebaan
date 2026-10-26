@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Select } from '../components/Select';
 import { M, Segmented } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { ymd } from '../lib/jalali';
@@ -295,14 +296,12 @@ export function Settings() {
         <h2 className="section-title">این دستگاه</h2>
         <label className="row-between gap-16">
           <span className="muted small">دیده‌بان الان روی کدام دستگاه باز است؟</span>
-          <select className="input" value={db.settings.thisDeviceId ?? ''} onChange={(e) => updateSettings({ thisDeviceId: e.target.value || null })}>
-            <option value="">انتخاب نشده</option>
-            {db.devices.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+          <Select<string>
+            label="این دستگاه"
+            value={db.settings.thisDeviceId ?? ''}
+            onChange={(v) => updateSettings({ thisDeviceId: v || null })}
+            options={[{ value: '', label: 'انتخاب نشده' }, ...db.devices.map((d) => ({ value: d.id, label: <M>{d.name}</M> }))]}
+          />
         </label>
       </section>
 

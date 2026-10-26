@@ -5,6 +5,8 @@ import { nextReset, type Schedule } from '../lib/time';
 import { PLANS, type Account, type Plan, type WeeklyLimit, type Weekday } from '../lib/types';
 import { DatePicker } from './DatePicker';
 import { Icon } from './Icon';
+import { ProjectInput } from './ProjectInput';
+import { Select } from './Select';
 import { TimePicker } from './TimePicker';
 import { ConfirmDelete, M, Modal, Segmented } from './ui';
 
@@ -141,7 +143,6 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
   const set = (patch: Partial<Account>) => setDraft((d) => ({ ...d, ...patch }));
 
   const calendar = db.settings.calendar;
-  const projects = [...new Set(db.accounts.map((a) => a.project.trim()).filter(Boolean))];
 
   const fableSchedule: Schedule = draft.fableSameReset
     ? { weekday: draft.total.resetWeekday, time: draft.total.resetTime }
@@ -209,24 +210,11 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
             <input className="input mono ltr" dir="ltr" type="email" value={draft.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" />
           </label>
         </div>
-        <label className="field">
-          <span className="field-label">پروژه</span>
-          <span className="input-icon">
-            <Icon name="folder" size={17} />
-            <input
-              className="input"
-              list="project-suggestions"
-              value={draft.project}
-              onChange={(e) => set({ project: e.target.value })}
-              placeholder="این اکانت درگیر چه پروژه‌ای است؟ مثلاً پروژه میرزا"
-            />
-          </span>
-          <datalist id="project-suggestions">
-            {projects.map((p) => (
-              <option key={p} value={p} />
-            ))}
-          </datalist>
-        </label>
+        <ProjectInput
+          value={draft.project}
+          onChange={(project) => set({ project })}
+          placeholder="این اکانت درگیر چه پروژه‌ای است؟ مثلاً پروژه میرزا"
+        />
         <div className="row-between wrap gap-16 end">
           <div className="stack-6">
             <span className="field-label">پلن</span>
@@ -302,15 +290,20 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
               onCalendarChange={(c) => updateSettings({ calendar: c })}
             />
           </div>
-          <label className="field">
+          <div className="field">
             <span className="field-label">یادآوری</span>
-            <select className="input" value={draft.remindDaysBefore} onChange={(e) => set({ remindDaysBefore: Number(e.target.value) })}>
-              <option value={1}>یک روز قبل</option>
-              <option value={3}>سه روز قبل</option>
-              <option value={7}>یک هفته قبل</option>
-              <option value={0}>بدون یادآوری</option>
-            </select>
-          </label>
+            <Select<number>
+              label="یادآوری تمدید"
+              value={draft.remindDaysBefore}
+              onChange={(remindDaysBefore) => set({ remindDaysBefore })}
+              options={[
+                { value: 1, label: 'یک روز قبل' },
+                { value: 3, label: 'سه روز قبل' },
+                { value: 7, label: 'یک هفته قبل' },
+                { value: 0, label: 'بدون یادآوری' },
+              ]}
+            />
+          </div>
         </div>
         <label className="field">
           <span className="field-label">یادداشت</span>

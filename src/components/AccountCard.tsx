@@ -3,6 +3,7 @@ import { WEEKDAY_NAMES, formatDate, type CalendarKind } from '../lib/jalali';
 import { daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account, Device } from '../lib/types';
 import { Icon } from './Icon';
+import { ProjectTag } from './ProjectInput';
 import { Ago, Bar, Countdown, M } from './ui';
 
 const LIMITS: { kind: LimitKind; label: ReactNode; color: string }[] = [
@@ -85,12 +86,7 @@ export function AccountCard({
               <M>{account.email}</M>
             </div>
           )}
-          {account.project && (
-            <span className="project-tag">
-              <Icon name="folder" size={13} />
-              {account.project}
-            </span>
-          )}
+          <ProjectTag project={account.project} />
         </div>
         <StatusPill active={account.active} />
       </div>
@@ -116,6 +112,9 @@ export function AccountCard({
                 <div className="muted xsmall">
                   ریست {WEEKDAY_NAMES[s.weekday]} <M>{s.time}</M> · <Countdown to={nextReset(s, now)} now={now} /> دیگر
                 </div>
+                {account.remote && account.remote[kind === 'total' ? 'hasWeekly' : 'hasFable'] === false && (
+                  <div className="xsmall warn-text">این عدد از افزونه نیامد؛ صفحه‌ی Usage را در Chrome همان لپ‌تاپ باز کن یا دستی واردش کن.</div>
+                )}
               </div>
             );
           })}

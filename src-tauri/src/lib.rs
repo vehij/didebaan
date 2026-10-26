@@ -9,8 +9,10 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, WindowEvent,
+    AppHandle, Emitter, Manager, WindowEvent,
 };
+use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_updater::UpdaterExt;
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_positioner::{Position, WindowExt};
 
@@ -104,6 +106,33 @@ fn toggle_tray_window(app: &AppHandle) {
     let _ = panel.set_focus();
 }
 
+/// Checks for a new release every hour from the native side, which keeps running while the
+/// dashboard window is closed (its web view gets paused then). Notifies once per version and tells
+/// the dashboard so it can show the install banner.
+fn spawn_update_checks(app: AppHandle) {
+    std::thread::spawn(move || {
+        let mut announced: Option<String> = None;
+        std::thread::sleep(Duration::from_secs(15));
+        loop {
+            if let Ok(updater) = app.updater() {
+                if let Ok(Some(update)) = tauri::async_runtime::block_on(updater.check()) {
+                    if announced.as_deref() != Some(update.version.as_str()) {
+                        let _ = app
+                            .notification()
+                            .builder()
+                            .title("نسخه‌ی جدید دیده‌بان")
+                            .body(format!("نسخه‌ی {} آماده است. دیده‌بان را باز کن و «به‌روزرسانی» را بزن.", update.version))
+                            .show();
+                        let _ = app.emit("update-available", update.version.clone());
+                        announced = Some(update.version);
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_secs(60 * 60));
+        }
+    });
+}
+
 /// Brings the dashboard to the front; called from the menu bar panel.
 #[tauri::command]
 fn show_main(app: AppHandle) {
@@ -142,6 +171,8 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            spawn_update_checks(app.handle().clone());
 
             if std::env::args().any(|a| a == BACKGROUND_ARG) {
                 if let Some(main) = app.get_webview_window("main") {

@@ -75,6 +75,8 @@ export function applyRemoteReports(db: Database, reports: RemoteReport[], newId:
         orgName: r.orgName,
         products: r.products,
         autoRenew: r.renewal ? r.renewal.autoRenew : (a.remote?.autoRenew ?? null),
+        hasWeekly: !!r.weekly,
+        hasFable: !!r.fable,
       },
     };
     if (total.usedPct !== a.total.usedPct || fable.usedPct !== a.fable.usedPct) {

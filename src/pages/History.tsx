@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../components/Select';
 import { M } from '../components/ui';
 import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
 import { useDb } from '../lib/store';
@@ -20,17 +21,15 @@ export function History() {
           <h1>تاریخچه‌ی مصرف</h1>
           <div className="muted small">هر بار که درصد مصرف را ثبت می‌کنی یا ریست هفتگی می‌رسد، اینجا می‌آید.</div>
         </div>
-        <label className="row gap-8 small muted">
+        <div className="row gap-8 small muted">
           اکانت
-          <select className="input" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-            <option value="all">همه</option>
-            {db.accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <Select<string>
+            label="اکانت"
+            value={accountId}
+            onChange={setAccountId}
+            options={[{ value: 'all', label: 'همه' }, ...db.accounts.map((a) => ({ value: a.id, label: a.label }))]}
+          />
+        </div>
       </header>
 
       {entries.length === 0 ? (

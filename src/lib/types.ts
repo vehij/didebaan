@@ -8,10 +8,10 @@ export interface Device {
   name: string;
   kind: DeviceKind;
   os: string;
+  /** Free-text project this device is used for; shares suggestions with account projects. */
+  project: string;
   note: string;
   createdAt: string;
-  /** Present once the browser extension has reported usage for this account's email. */
-  remote?: RemoteInfo | null;
 }
 
 /** Weekday follows JS Date#getDay(): 0 = Sunday … 6 = Saturday. */
@@ -37,6 +37,9 @@ export interface RemoteInfo {
   products: { name: string; pct: number }[];
   /** False when the Billing page says the subscription ends instead of renewing. */
   autoRenew?: boolean | null;
+  /** Which limits the last report carried; a missing one keeps its previous value. */
+  hasWeekly?: boolean;
+  hasFable?: boolean;
 }
 
 export interface Account {

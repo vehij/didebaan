@@ -3,7 +3,9 @@ import { AccountCard } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { Countdown, M, Segmented } from '../components/ui';
 import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
-import { replaceDatabase, newId, useDb } from '../lib/store';
+import { allProjects, replaceDatabase, newId, useDb } from '../lib/store';
+import { ALL_PROJECTS, NO_PROJECT, inProject } from '../lib/projects';
+import { Select } from '../components/Select';
 import { sampleDatabase } from '../lib/sample';
 import { bestAccount, daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account } from '../lib/types';
@@ -73,6 +75,7 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('reset');
   const [query, setQuery] = useState('');
+  const [project, setProject] = useState(ALL_PROJECTS);
 
   const devices = useMemo(() => new Map(db.devices.map((d) => [d.id, d])), [db.devices]);
   const active = db.accounts.filter((a) => a.active);
@@ -87,16 +90,26 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
     };
     return db.accounts
       .filter((a) => filter === 'all' || (filter === 'active') === a.active)
+      .filter((a) => inProject(a, project, devices))
       .filter(
         (a) =>
           !q ||
           a.label.toLowerCase().includes(q) ||
           a.email.toLowerCase().includes(q) ||
           a.project.toLowerCase().includes(q) ||
-          a.deviceIds.some((id) => devices.get(id)?.name.toLowerCase().includes(q)),
+          a.deviceIds.some((id) => {
+            const d = devices.get(id);
+            return !!d && (d.name.toLowerCase().includes(q) || d.project.toLowerCase().includes(q));
+          }),
       )
       .sort(sort === 'name' ? (x, y) => x.label.localeCompare(y.label, 'fa') : (x, y) => keys[sort](x) - keys[sort](y));
-  }, [db.accounts, devices, filter, sort, query, now]);
+  }, [db.accounts, devices, filter, sort, query, project, now]);
+
+  const projectOptions = [
+    { value: ALL_PROJECTS, label: 'همه‌ی پروژه‌ها', hint: <M>{db.accounts.length}</M> },
+    ...allProjects(db).map((p) => ({ value: p, label: p, hint: <M>{db.accounts.filter((a) => inProject(a, p, devices)).length}</M> })),
+    { value: NO_PROJECT, label: 'بدون پروژه', hint: <M>{db.accounts.filter((a) => inProject(a, NO_PROJECT, devices)).length}</M> },
+  ];
 
   const soonestReset = active
     .map((a) => ({ a, at: nextReset(scheduleOf(a, 'total'), now) }))
@@ -218,15 +231,23 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
                     { value: 'inactive', label: <>غیرفعال <M className="count">{db.accounts.length - active.length}</M></> },
                   ]}
                 />
-                <label className="row gap-8 small muted">
+                {projectOptions.length > 1 && (
+                  <Select<string> label="فیلتر پروژه" value={project} onChange={setProject} options={projectOptions} className="project-filter" />
+                )}
+                <div className="row gap-8 small muted">
                   مرتب‌سازی
-                  <select className="input" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-                    <option value="reset">نزدیک‌ترین ریست</option>
-                    <option value="free">بیشترین ظرفیت آزاد</option>
-                    <option value="renew">نزدیک‌ترین تمدید</option>
-                    <option value="name">نام</option>
-                  </select>
-                </label>
+                  <Select<Sort>
+                    label="مرتب‌سازی"
+                    value={sort}
+                    onChange={setSort}
+                    options={[
+                      { value: 'reset', label: 'نزدیک‌ترین ریست' },
+                      { value: 'free', label: 'بیشترین ظرفیت آزاد' },
+                      { value: 'renew', label: 'نزدیک‌ترین تمدید' },
+                      { value: 'name', label: 'نام' },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
             {list.length === 0 ? (

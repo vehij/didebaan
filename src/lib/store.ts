@@ -72,7 +72,7 @@ export function normalize(raw: unknown): Database {
   const r = raw as Partial<Database>;
   return {
     version: 1,
-    devices: Array.isArray(r.devices) ? r.devices : [],
+    devices: Array.isArray(r.devices) ? r.devices.map((d) => ({ ...d, project: d.project ?? '' })) : [],
     accounts: Array.isArray(r.accounts) ? r.accounts.map((a) => ({ ...a, project: a.project ?? '' })) : [],
     usage: Array.isArray(r.usage) ? r.usage : [],
     settings: { ...base.settings, ...(r.settings ?? {}), notify: { ...base.settings.notify, ...(r.settings?.notify ?? {}) }, sync: { ...base.settings.sync, ...(r.settings?.sync ?? {}) } },
@@ -189,4 +189,11 @@ export function applyRemote(reports: RemoteReport[]): RemoteReport[] {
   const { db: next, unmatched } = applyRemoteReports(db, reports, newId);
   commit(applyResets(next, new Date(), newId));
   return unmatched;
+}
+
+/** Every project name used on an account or a device, for suggestions. */
+export function allProjects(db: Database): string[] {
+  return [...new Set([...db.accounts.map((a) => a.project), ...db.devices.map((d) => d.project)].map((p) => p.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'fa'),
+  );
 }

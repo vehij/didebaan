@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { StatusPill } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
+import { ProjectInput, ProjectTag } from '../components/ProjectInput';
 import { Bar, ConfirmDelete, M, Modal, Segmented } from '../components/ui';
-import { deleteDevice, newId, saveAccount, saveDevice, updateSettings, useDb } from '../lib/store';
+import { allProjects, deleteDevice, newId, saveAccount, saveDevice, updateSettings, useDb } from '../lib/store';
+import { ALL_PROJECTS, NO_PROJECT, deviceInProject } from '../lib/projects';
+import { Select } from '../components/Select';
 import type { Device, DeviceKind } from '../lib/types';
 
 const KIND_LABEL: Record<DeviceKind, string> = { laptop: 'لپ‌تاپ', desktop: 'دسکتاپ', server: 'سرور' };
@@ -11,7 +14,7 @@ function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose:
   const db = useDb();
   const existing = deviceId ? db.devices.find((d) => d.id === deviceId) : undefined;
   const [draft, setDraft] = useState<Device>(
-    () => existing ?? { id: newId(), name: '', kind: 'laptop', os: '', note: '', createdAt: new Date().toISOString() },
+    () => existing ?? { id: newId(), name: '', kind: 'laptop', os: '', project: '', note: '', createdAt: new Date().toISOString() },
   );
   const [isThis, setIsThis] = useState(db.settings.thisDeviceId === draft.id);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,7 @@ function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose:
 
   const save = () => {
     if (!draft.name.trim()) return setError('یک نام برای دستگاه بنویس.');
-    saveDevice({ ...draft, name: draft.name.trim(), os: draft.os.trim() });
+    saveDevice({ ...draft, name: draft.name.trim(), os: draft.os.trim(), project: draft.project.trim() });
     if (isThis) updateSettings({ thisDeviceId: draft.id });
     else if (db.settings.thisDeviceId === draft.id) updateSettings({ thisDeviceId: null });
     onClose();
@@ -67,6 +70,7 @@ function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose:
           <input className="input mono ltr" dir="ltr" value={draft.os} onChange={(e) => set({ os: e.target.value })} placeholder="macOS 26" />
         </label>
       </div>
+      <ProjectInput value={draft.project} onChange={(project) => set({ project })} placeholder="این دستگاه برای کدام پروژه است؟ مثلاً گومان" />
       <div className="stack-6">
         <span className="field-label">نوع</span>
         <Segmented<DeviceKind>
@@ -92,6 +96,13 @@ export function Devices() {
   const db = useDb();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const logins = db.accounts.reduce((n, a) => n + a.deviceIds.length, 0);
+  const [project, setProject] = useState(ALL_PROJECTS);
+  const shown = db.devices.filter((d) => deviceInProject(d, project, db.accounts));
+  const projectOptions = [
+    { value: ALL_PROJECTS, label: 'همه‌ی پروژه‌ها', hint: <M>{db.devices.length}</M> },
+    ...allProjects(db).map((p) => ({ value: p, label: p, hint: <M>{db.devices.filter((d) => deviceInProject(d, p, db.accounts)).length}</M> })),
+    { value: NO_PROJECT, label: 'بدون پروژه', hint: <M>{db.devices.filter((d) => deviceInProject(d, NO_PROJECT, db.accounts)).length}</M> },
+  ];
 
   const toggle = (accountId: string, deviceId: string) => {
     const a = db.accounts.find((x) => x.id === accountId);
@@ -109,10 +120,13 @@ export function Devices() {
             <M>{db.devices.length}</M> دستگاه · <M>{logins}</M> لاگین
           </div>
         </div>
-        <button type="button" className="btn primary" onClick={() => setEditing('new')}>
-          <Icon name="plus" size={17} stroke={2} />
-          دستگاه جدید
-        </button>
+        <div className="row wrap gap-10">
+          {projectOptions.length > 1 && <Select<string> label="فیلتر پروژه" value={project} onChange={setProject} options={projectOptions} className="project-filter" />}
+          <button type="button" className="btn primary" onClick={() => setEditing('new')}>
+            <Icon name="plus" size={17} stroke={2} />
+            دستگاه جدید
+          </button>
+        </div>
       </header>
 
       {db.devices.length === 0 ? (
@@ -128,7 +142,8 @@ export function Devices() {
       ) : (
         <>
           <div className="cards">
-            {db.devices.map((d) => {
+            {shown.length === 0 && <p className="muted">دستگاهی در این پروژه نیست.</p>}
+            {shown.map((d) => {
               const accounts = db.accounts.filter((a) => a.deviceIds.includes(d.id));
               return (
                 <button key={d.id} type="button" className="card device-card" onClick={() => setEditing(d.id)} aria-label={`ویرایش ${d.name}`}>
@@ -141,6 +156,7 @@ export function Devices() {
                         <M className="device-name">{d.name}</M>
                         {db.settings.thisDeviceId === d.id && <span className="tag info">این دستگاه</span>}
                       </div>
+                      <ProjectTag project={d.project} />
                       <span className="muted small">
                         {KIND_LABEL[d.kind]}
                         {d.os && (
@@ -207,10 +223,11 @@ export function Devices() {
                     </tr>
                   </thead>
                   <tbody>
-                    {db.devices.map((d) => (
+                    {shown.map((d) => (
                       <tr key={d.id}>
                         <th scope="row">
                           <M>{d.name}</M>
+                          {d.project && <span className="muted xsmall"> · {d.project}</span>}
                         </th>
                         {db.accounts.map((a) => {
                           const on = a.deviceIds.includes(d.id);
