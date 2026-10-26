@@ -1,6 +1,6 @@
 [package]
 name = "didebaan"
-version = "0.7.0"
+version = "0.7.1"
 description = "Didebaan — manage Claude accounts across devices"
 edition = "2021"
 

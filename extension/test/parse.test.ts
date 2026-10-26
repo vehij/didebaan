@@ -106,3 +106,59 @@ Oct 14, 2026 $100.01 Paid`;
     expect(parseEnglishDate('Foo 14, 2026')).toBeNull();
   });
 });
+
+describe('real claude.ai usage response (shape from a troubleshooting dump)', () => {
+  const usage = {
+    five_hour: { limit_dollars: null, resets_at: null, utilization: 0 },
+    seven_day: { resets_at: '2026-10-29T09:59:59.777648+00:00', utilization: 70 },
+    seven_day_opus: null,
+    seven_day_sonnet: null,
+    seven_day_cowork: null,
+    seven_day_oauth_apps: null,
+    limits: [
+      { group: 'session', is_active: false, kind: 'five_hour', percent: 0, resets_at: null, scope: null, severity: 'ok' },
+      { group: 'weekly', is_active: false, kind: 'seven_day', percent: 70, resets_at: '2026-10-29T09:59:59.777648+00:00', scope: null, severity: 'ok' },
+      {
+        group: 'weekly',
+        is_active: true,
+        kind: 'seven_day_model',
+        percent: 96,
+        resets_at: '2026-10-29T09:59:59.777785+00:00',
+        scope: { model: { display_name: 'Fable', id: null }, surface: null },
+        severity: 'critical',
+      },
+    ],
+    seven_day_breakdown: {
+      as_of: '2026-10-26T10:16:53.789008+00:00',
+      rows: [
+        { display_name: 'Claude Code', key: 'claude_code', percent: 28 },
+        { display_name: 'Chats', key: 'chat', percent: 0 },
+        { display_name: 'Cowork', key: 'cowork', percent: 72 },
+      ],
+      window_started_at: '2026-10-22T09:59:59.777648+00:00',
+    },
+    weekly_scoped_shares: [{ allowance_percent_of_weekly: 50, limit_index: 2, used_percent_of_weekly: 48 }],
+  };
+
+  it('reads the weekly limit, the model-scoped Fable limit and the product breakdown', () => {
+    const r = parseUsage(usage);
+    expect(r.weekly).toEqual({ pct: 70, resetsAt: '2026-10-29T09:59:59.777648+00:00' });
+    expect(r.fable).toEqual({ pct: 96, resetsAt: '2026-10-29T09:59:59.777785+00:00' });
+    expect(r.products).toEqual([
+      { name: 'Claude Code', pct: 28 },
+      { name: 'Chats', pct: 0 },
+      { name: 'Cowork', pct: 72 },
+    ]);
+  });
+
+  it('still finds the model limit when its display name is not Fable', () => {
+    const renamed = { ...usage, limits: usage.limits.map((l) => (l.scope ? { ...l, scope: { model: { display_name: 'Next', id: null }, surface: null } } : l)) };
+    expect(parseUsage(renamed).fable?.pct).toBe(96);
+  });
+
+  it('parses page text where the title shares a line with its subtitle', () => {
+    const r = parseUsagePage(['This week', 'Resets Thursday 3:00 AM', '70% used', 'Fable Up to 50% of your weekly limit', 'Resets Thursday 3:00 AM', '96% used'], now);
+    expect(r.weekly?.pct).toBe(70);
+    expect(r.fable?.pct).toBe(96);
+  });
+});

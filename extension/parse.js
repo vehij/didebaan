@@ -34,11 +34,17 @@ export function findEmail(value, depth = 0) {
 
 function productsOf(value, depth = 0) {
   if (depth > 3 || value === null || typeof value !== 'object') return [];
-  for (const [k, v] of Object.entries(value)) {
-    if (!/product|breakdown|surface/i.test(k)) continue;
+  for (const [k, raw] of Object.entries(value)) {
+    if (!/product|breakdown/i.test(k)) continue;
+    // e.g. seven_day_breakdown: { rows: [{ display_name, key, percent }], as_of, … }
+    const v = isObj(raw) && Array.isArray(raw.rows) ? raw.rows : raw;
     if (Array.isArray(v)) {
       const list = v
-        .map((p) => (isObj(p) ? { name: p.name ?? p.product ?? p.label ?? p.surface, pct: p.pct ?? p.percent ?? p.percentage ?? p.share ?? p.utilization } : null))
+        .map((p) =>
+          isObj(p)
+            ? { name: p.display_name ?? p.name ?? p.product ?? p.label ?? p.key, pct: p.percent ?? p.pct ?? p.percentage ?? p.share ?? p.utilization }
+            : null,
+        )
         .filter((p) => p && p.name != null && typeof p.pct === 'number');
       if (list.length) return list.map((p) => ({ name: prettyProduct(p.name), pct: Math.round(p.pct) }));
     } else if (isObj(v)) {
@@ -55,13 +61,24 @@ function productsOf(value, depth = 0) {
   return [];
 }
 
+/**
+ * `limits` lists every limit shown on the Usage page; a model's own weekly limit (Fable) is the
+ * entry scoped to a model: { percent, resets_at, scope: { model: { display_name } } }.
+ */
+function modelLimitOf(limits) {
+  if (!Array.isArray(limits)) return null;
+  const scoped = limits.filter((l) => isObj(l) && isObj(l.scope) && isObj(l.scope.model) && typeof l.percent === 'number');
+  const pick = scoped.find((l) => /fable/i.test(String(l.scope.model.display_name ?? ''))) ?? scoped[0];
+  return pick ? readingOf(pick) : null;
+}
+
 /** Reads the weekly, Fable and per-product numbers out of an organization usage response. */
 export function parseUsage(usage) {
   if (!isObj(usage)) return { weekly: null, fable: null, products: [] };
   const weekly = readingOf(usage.seven_day ?? usage.weekly ?? usage.week);
-  let fable = null;
+  let fable = modelLimitOf(usage.limits);
   for (const [k, v] of Object.entries(usage)) {
-    if (/fable/i.test(k)) fable = readingOf(v);
+    if (!fable && /fable/i.test(k)) fable = readingOf(v);
   }
   if (!fable) {
     // A model-specific weekly window named after another model, e.g. seven_day_opus.
@@ -123,12 +140,14 @@ export function resetTextToIso(text, now = new Date()) {
 /** Reads the Settings › Usage page's visible text (one entry per line). */
 export function parseUsagePage(lines, now = new Date()) {
   const clean = lines.map((l) => l.trim()).filter(Boolean);
+  // Titles may share a line with their subtitle ("Fable Up to 50% of your weekly limit"),
+  // and "This week" must not match "This week's usage by product".
   const block = (title) => {
-    const i = clean.findIndex((l) => l.toLowerCase() === title);
+    const i = clean.findIndex((l) => title.test(l));
     if (i < 0) return null;
     let pct = null;
     let resetsAt = null;
-    for (const l of clean.slice(i + 1, i + 6)) {
+    for (const l of clean.slice(i, i + 6)) {
       const p = /(\d+(?:\.\d+)?)%\s*used/i.exec(l);
       if (p && pct === null) pct = Number(p[1]);
       if (/^resets\s/i.test(l) && !resetsAt) resetsAt = resetTextToIso(l, now);
@@ -144,7 +163,7 @@ export function parseUsagePage(lines, now = new Date()) {
       products.push({ name: prettyProduct(clean[i]), pct: Math.round(Number(p[1])) });
     }
   }
-  return { weekly: block('this week'), fable: block('fable'), products };
+  return { weekly: block(/^this week(?![’']s)\b/i), fable: block(/^fable\b/i), products };
 }
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];

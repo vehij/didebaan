@@ -74,5 +74,6 @@ $('unpair').addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ type: 'unpair' });
   render();
 });
+$('version').textContent = `نسخه‌ی ${chrome.runtime.getManifest().version}`;
 chrome.storage.onChanged.addListener(render);
 render();
