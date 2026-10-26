@@ -8,6 +8,7 @@ const account = (over: Partial<Account> = {}): Account => ({
   id: 'a',
   label: 'اکانت اصلی',
   email: '',
+  project: '',
   plan: 'Max 20x',
   active: true,
   deviceIds: [],

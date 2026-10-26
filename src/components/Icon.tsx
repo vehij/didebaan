@@ -72,6 +72,24 @@ const paths = {
   ),
   trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
   download: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
+  folder: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </>
+  ),
+  moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
+  chevronRight: <path d="m9 6 6 6-6 6" />,
+  chevronLeft: <path d="m15 6-6 6 6 6" />,
+  chevronUp: <path d="m6 15 6-6 6 6" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
   upload: <path d="M12 20V9M7 14l5-5 5 5M5 4h14" />,
 } satisfies Record<string, ReactNode>;
 

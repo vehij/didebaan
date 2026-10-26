@@ -29,6 +29,8 @@ export interface Account {
   id: string;
   label: string;
   email: string;
+  /** Free-text name of the project this account is working on, e.g. "پروژه میرزا". */
+  project: string;
   plan: Plan;
   active: boolean;
   deviceIds: string[];
@@ -64,6 +66,8 @@ export interface NotifySettings {
 
 export interface Settings {
   warnAt: number;
+  /** Calendar used to show and pick dates. */
+  calendar: 'jalali' | 'gregorian';
   thisDeviceId: string | null;
   notify: NotifySettings;
 }
@@ -83,6 +87,6 @@ export const emptyDatabase = (): Database => ({
   devices: [],
   accounts: [],
   usage: [],
-  settings: { warnAt: 85, thisDeviceId: null, notify: { limit: true, reset: true, renewal: true } },
+  settings: { warnAt: 85, calendar: 'jalali', thisDeviceId: null, notify: { limit: true, reset: true, renewal: true } },
   notified: [],
 });

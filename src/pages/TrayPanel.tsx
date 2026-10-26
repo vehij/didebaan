@@ -115,7 +115,10 @@ export function TrayPanel() {
             {active.map(({ a, at }) => (
               <button key={a.id} type="button" className="tray-row" onClick={() => openDashboard(a.id)} aria-label={`ثبت مصرف ${a.label}`}>
                 <div className="row-between">
-                  <span className="strong small">{a.label}</span>
+                  <span className="strong small">
+                    {a.label}
+                    {a.project && <span className="muted xsmall"> · {a.project}</span>}
+                  </span>
                   <span className="xsmall muted">
                     ریست <Countdown to={at} now={now} />
                   </span>

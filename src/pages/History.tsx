@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { M } from '../components/ui';
-import { WEEKDAY_NAMES, formatTime, jalaliOf } from '../lib/jalali';
+import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
 import { useDb } from '../lib/store';
 
 export function History() {
@@ -58,7 +58,7 @@ export function History() {
                 return (
                   <tr key={u.id}>
                     <td>
-                      {WEEKDAY_NAMES[at.getDay()]} <M>{jalaliOf(at)}</M> <M className="muted">{formatTime(at)}</M>
+                      {WEEKDAY_NAMES[at.getDay()]} <M>{formatDate(ymd(at), db.settings.calendar)}</M> <M className="muted">{formatTime(at)}</M>
                     </td>
                     <td>{names.get(u.accountId) ?? '—'}</td>
                     <td>

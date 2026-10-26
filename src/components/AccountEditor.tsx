@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { WEEKDAY_NAMES, WEEK_ORDER, formatTime, gregorianToJalali, jalaliOf, jalaliToGregorian, ymd } from '../lib/jalali';
-import { deleteAccount, newId, saveAccount, useDb } from '../lib/store';
-import { addMonths, daysUntil, nextReset, type Schedule } from '../lib/time';
+import { WEEKDAY_NAMES, WEEK_ORDER, formatDate, formatTime, ymd } from '../lib/jalali';
+import { deleteAccount, newId, saveAccount, updateSettings, useDb } from '../lib/store';
+import { nextReset, type Schedule } from '../lib/time';
 import { PLANS, type Account, type Plan, type WeeklyLimit, type Weekday } from '../lib/types';
+import { DatePicker } from './DatePicker';
 import { Icon } from './Icon';
+import { TimePicker } from './TimePicker';
 import { ConfirmDelete, M, Modal, Segmented } from './ui';
 
 function blankAccount(): Account {
@@ -13,6 +15,7 @@ function blankAccount(): Account {
     id: newId(),
     label: '',
     email: '',
+    project: '',
     plan: 'Max 5x',
     active: true,
     deviceIds: [],
@@ -35,7 +38,9 @@ function LimitSection({
   schedule,
   same,
   onSame,
+  calendar,
 }: {
+  calendar: 'jalali' | 'gregorian';
   title: ReactNode;
   color: string;
   limit: WeeklyLimit;
@@ -97,8 +102,8 @@ function LimitSection({
       )}
 
       {!same && (
-        <div className="stack-10">
-          <span className="field-label">روز و ساعت ریست هفتگی</span>
+        <div className="stack-12">
+          <span className="field-label">روز ریست هفتگی</span>
           <div className="row wrap gap-6">
             {WEEK_ORDER.map((d) => (
               <button
@@ -111,24 +116,16 @@ function LimitSection({
                 {WEEKDAY_NAMES[d]}
               </button>
             ))}
-            <label className="row gap-8 small muted push-end">
-              ساعت
-              <input
-                className="input mono"
-                dir="ltr"
-                type="time"
-                value={limit.resetTime}
-                onChange={(e) => e.target.value && onChange({ ...limit, resetTime: e.target.value })}
-              />
-            </label>
           </div>
+          <span className="field-label">ساعت ریست</span>
+          <TimePicker label="ساعت ریست هفتگی" value={limit.resetTime} onChange={(resetTime) => onChange({ ...limit, resetTime })} />
         </div>
       )}
 
       <div className="hint">
         <Icon name="refresh" size={16} />
         <span>
-          ریست بعدی: {WEEKDAY_NAMES[next.getDay()]} <M>{jalaliOf(next)}</M> ساعت <M>{formatTime(next)}</M> — بعد از آن درصد خودکار صفر می‌شود.
+          ریست بعدی: {WEEKDAY_NAMES[next.getDay()]} <M>{formatDate(ymd(next), calendar)}</M> ساعت <M>{formatTime(next)}</M> — بعد از آن درصد خودکار صفر می‌شود.
         </span>
       </div>
     </section>
@@ -139,13 +136,12 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
   const db = useDb();
   const existing = accountId ? db.accounts.find((a) => a.id === accountId) : undefined;
   const [draft, setDraft] = useState<Account>(() => existing ?? blankAccount());
-  const [renewText, setRenewText] = useState(() => (draft.renewalDate ? gregorianToJalali(draft.renewalDate) : ''));
   const [error, setError] = useState<string | null>(null);
   const [armed, setArmed] = useState(false);
   const set = (patch: Partial<Account>) => setDraft((d) => ({ ...d, ...patch }));
 
-  const renewalGregorian = renewText.trim() ? jalaliToGregorian(renewText) : null;
-  const renewInvalid = renewText.trim() !== '' && !renewalGregorian;
+  const calendar = db.settings.calendar;
+  const projects = [...new Set(db.accounts.map((a) => a.project.trim()).filter(Boolean))];
 
   const fableSchedule: Schedule = draft.fableSameReset
     ? { weekday: draft.total.resetWeekday, time: draft.total.resetTime }
@@ -153,15 +149,9 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
 
   const save = () => {
     if (!draft.label.trim()) return setError('یک نام نمایشی برای اکانت بنویس.');
-    if (renewInvalid) return setError('تاریخ تمدید را به شکل 1405/08/19 بنویس.');
     const fable = draft.fableSameReset ? { ...draft.fable, resetWeekday: draft.total.resetWeekday, resetTime: draft.total.resetTime } : draft.fable;
-    saveAccount({ ...draft, label: draft.label.trim(), email: draft.email.trim(), fable, renewalDate: renewalGregorian });
+    saveAccount({ ...draft, label: draft.label.trim(), email: draft.email.trim(), project: draft.project.trim(), fable });
     onClose();
-  };
-
-  const extendMonth = () => {
-    const base = renewalGregorian ?? ymd(new Date());
-    setRenewText(gregorianToJalali(addMonths(base, 1)));
   };
 
   const toggleDevice = (id: string) =>
@@ -175,7 +165,7 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
       subtitle={
         lastUpdate ? (
           <>
-            آخرین به‌روزرسانی مصرف: <M>{jalaliOf(lastUpdate)}</M> ساعت <M>{formatTime(lastUpdate)}</M>
+            آخرین به‌روزرسانی مصرف: <M>{formatDate(ymd(lastUpdate), calendar)}</M> ساعت <M>{formatTime(lastUpdate)}</M>
           </>
         ) : undefined
       }
@@ -219,6 +209,24 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
             <input className="input mono ltr" dir="ltr" type="email" value={draft.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" />
           </label>
         </div>
+        <label className="field">
+          <span className="field-label">پروژه</span>
+          <span className="input-icon">
+            <Icon name="folder" size={17} />
+            <input
+              className="input"
+              list="project-suggestions"
+              value={draft.project}
+              onChange={(e) => set({ project: e.target.value })}
+              placeholder="این اکانت درگیر چه پروژه‌ای است؟ مثلاً پروژه میرزا"
+            />
+          </span>
+          <datalist id="project-suggestions">
+            {projects.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+        </label>
         <div className="row-between wrap gap-16 end">
           <div className="stack-6">
             <span className="field-label">پلن</span>
@@ -258,6 +266,7 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
         title="لیمیت هفتگی کل"
         color="var(--total)"
         limit={draft.total}
+        calendar={calendar}
         warnAt={db.settings.warnAt}
         onChange={(total) => set({ total })}
         schedule={{ weekday: draft.total.resetWeekday, time: draft.total.resetTime }}
@@ -270,6 +279,7 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
         }
         color="var(--fable)"
         limit={draft.fable}
+        calendar={calendar}
         warnAt={db.settings.warnAt}
         onChange={(fable) => set({ fable })}
         schedule={fableSchedule}
@@ -282,40 +292,16 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
       <section className="stack-14">
         <h3>تمدید اشتراک</h3>
         <div className="grid-2">
-          <label className="field">
-            <span className="field-label">تاریخ تمدید (شمسی)</span>
-            <div className="row gap-8">
-              <input
-                className={`input mono ltr grow ${renewInvalid ? 'invalid' : ''}`}
-                dir="ltr"
-                value={renewText}
-                onChange={(e) => setRenewText(e.target.value)}
-                placeholder="1405/08/19"
-                aria-invalid={renewInvalid}
-              />
-              <button type="button" className="btn" onClick={extendMonth} title="یک ماه به تاریخ تمدید اضافه کن">
-                <M>+1</M> ماه
-              </button>
-            </div>
-            <span className="xsmall muted">
-              {renewInvalid ? (
-                <span className="error">تاریخ معتبر نیست</span>
-              ) : renewalGregorian ? (
-                <>
-                  {daysUntil(renewalGregorian, new Date()) >= 0 ? (
-                    <>
-                      <M>{daysUntil(renewalGregorian, new Date())}</M> روز مانده
-                    </>
-                  ) : (
-                    'گذشته'
-                  )}{' '}
-                  · میلادی <M>{renewalGregorian.replaceAll('-', '/')}</M>
-                </>
-              ) : (
-                'اختیاری'
-              )}
-            </span>
-          </label>
+          <div className="field">
+            <span className="field-label">تاریخ تمدید</span>
+            <DatePicker
+              label="تاریخ تمدید"
+              value={draft.renewalDate}
+              onChange={(renewalDate) => set({ renewalDate })}
+              calendar={calendar}
+              onCalendarChange={(c) => updateSettings({ calendar: c })}
+            />
+          </div>
           <label className="field">
             <span className="field-label">یادآوری</span>
             <select className="input" value={draft.remindDaysBefore} onChange={(e) => set({ remindDaysBefore: Number(e.target.value) })}>

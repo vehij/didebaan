@@ -20,6 +20,7 @@ export function sampleDatabase(newId: () => string, now = new Date()): Database 
   const account = (
     label: string,
     email: string,
+    project: string,
     plan: Account['plan'],
     deviceIds: string[],
     total: number,
@@ -32,6 +33,7 @@ export function sampleDatabase(newId: () => string, now = new Date()): Database 
     id: newId(),
     label,
     email,
+    project,
     plan,
     active,
     deviceIds,
@@ -48,11 +50,11 @@ export function sampleDatabase(newId: () => string, now = new Date()): Database 
     ...emptyDatabase(),
     devices: [mbp, mini, air, imac, vps],
     accounts: [
-      account('اکانت اصلی', 'main.max@example.com', 'Max 20x', [mbp.id, mini.id], 62, 81, 4, '10:30', 15),
-      account('تیم طراحی', 'design.team@example.com', 'Team', [imac.id], 34, 12, 6, '09:00', 28),
-      account('اکانت پشتیبان', 'backup.one@example.com', 'Max 5x', [air.id, mini.id], 91, 97, 2, '21:00', 3),
-      account('پروژه مشتری', 'client.x@example.com', 'Max 5x', [mbp.id], 18, 55, 5, '13:15', 22),
-      account('تست و آزمایش', 'lab.test@example.com', 'Pro', [vps.id], 0, 0, 1, '12:00', -6, false),
+      account('اکانت اصلی', 'main.max@example.com', 'پروژه میرزا', 'Max 20x', [mbp.id, mini.id], 62, 81, 4, '10:30', 15),
+      account('تیم طراحی', 'design.team@example.com', 'طراحی سایت', 'Team', [imac.id], 34, 12, 6, '09:00', 28),
+      account('اکانت پشتیبان', 'backup.one@example.com', 'پروژه میرزا', 'Max 5x', [air.id, mini.id], 91, 97, 2, '21:00', 3),
+      account('پروژه مشتری', 'client.x@example.com', 'اپ فروشگاه', 'Max 5x', [mbp.id], 18, 55, 5, '13:15', 22),
+      account('تست و آزمایش', 'lab.test@example.com', '', 'Pro', [vps.id], 0, 0, 1, '12:00', -6, false),
     ],
     settings: { ...emptyDatabase().settings, thisDeviceId: mbp.id },
   };

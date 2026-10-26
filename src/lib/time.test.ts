@@ -10,6 +10,7 @@ const account = (over: Partial<Account> = {}): Account => ({
   id: 'a',
   label: 'A',
   email: 'a@example.com',
+  project: '',
   plan: 'Max 20x',
   active: true,
   deviceIds: [],
@@ -91,5 +92,20 @@ describe('helpers', () => {
     const b = account({ id: 'b', total: { ...account().total, usedPct: 20 } });
     const c = account({ id: 'c', active: false, total: { ...account().total, usedPct: 0 } });
     expect(bestAccount([a, b, c], 'total', now)?.id).toBe('b');
+  });
+});
+
+describe('calendar months', () => {
+  it('lists Jalali month days with the right length and weekday', async () => {
+    const { daysOfMonth, shiftMonth, yearMonthOf } = await import('./jalali');
+    const aban = daysOfMonth('jalali', { y: 1405, m: 8 });
+    expect(aban).toHaveLength(30);
+    expect(aban[0]).toEqual(new Date(2026, 9, 23));
+    expect(aban[0].getDay()).toBe(5);
+    expect(daysOfMonth('jalali', { y: 1403, m: 12 })).toHaveLength(30);
+    expect(daysOfMonth('gregorian', { y: 2028, m: 2 })).toHaveLength(29);
+    expect(yearMonthOf(now, 'jalali')).toEqual({ y: 1405, m: 8 });
+    expect(shiftMonth({ y: 1405, m: 12 }, 1)).toEqual({ y: 1406, m: 1 });
+    expect(shiftMonth({ y: 1405, m: 1 }, -1)).toEqual({ y: 1404, m: 12 });
   });
 });

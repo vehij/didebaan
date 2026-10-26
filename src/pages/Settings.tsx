@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { M } from '../components/ui';
+import { M, Segmented } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { ymd } from '../lib/jalali';
 import { sendNotification } from '../lib/notify';
@@ -77,6 +77,22 @@ export function Settings() {
           <h1>تنظیمات</h1>
         </div>
       </header>
+
+      <section className="card settings-section">
+        <h2 className="section-title">تقویم</h2>
+        <div className="row-between wrap gap-16">
+          <span className="muted small">تاریخ‌ها با کدام تقویم نشان داده شوند؟ در تاریخ‌انتخاب‌گر هم می‌شود عوضش کرد.</span>
+          <Segmented<'jalali' | 'gregorian'>
+            label="تقویم"
+            value={db.settings.calendar}
+            onChange={(calendar) => updateSettings({ calendar })}
+            options={[
+              { value: 'jalali', label: 'شمسی' },
+              { value: 'gregorian', label: 'میلادی' },
+            ]}
+          />
+        </div>
+      </section>
 
       <section className="card settings-section">
         <h2 className="section-title">هشدارها</h2>

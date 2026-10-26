@@ -1,4 +1,4 @@
-import { gregorianToJalali } from './jalali';
+import { formatDate } from './jalali';
 import { getDb, markNotified } from './store';
 import { isTauri } from './storage';
 import { daysUntil, limitOf, previousReset, scheduleOf } from './time';
@@ -42,7 +42,7 @@ export function dueAlerts(db: Database, now: Date): Alert[] {
         alerts.push({
           key: `renewal:${a.id}:${a.renewalDate}`,
           title: `تمدید ${a.label}`,
-          body: `${days === 0 ? 'امروز' : `${days} روز دیگر`} (${gregorianToJalali(a.renewalDate)}) موعد تمدید اشتراک است.`,
+          body: `${days === 0 ? 'امروز' : `${days} روز دیگر`} (${formatDate(a.renewalDate, db.settings.calendar)}) موعد تمدید اشتراک است.`,
         });
       }
     }

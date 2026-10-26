@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { WEEKDAY_NAMES, gregorianToJalali } from '../lib/jalali';
+import { WEEKDAY_NAMES, formatDate, type CalendarKind } from '../lib/jalali';
 import { daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account, Device } from '../lib/types';
 import { Icon } from './Icon';
@@ -39,7 +39,21 @@ export function StatusPill({ active }: { active: boolean }) {
   );
 }
 
-export function AccountCard({ account, devices, now, warnAt, onEdit }: { account: Account; devices: Map<string, Device>; now: Date; warnAt: number; onEdit: () => void }) {
+export function AccountCard({
+  account,
+  devices,
+  now,
+  warnAt,
+  calendar,
+  onEdit,
+}: {
+  account: Account;
+  devices: Map<string, Device>;
+  now: Date;
+  warnAt: number;
+  calendar: CalendarKind;
+  onEdit: () => void;
+}) {
   return (
     <button type="button" className="card account-card" onClick={onEdit} aria-label={`ویرایش ${account.label}`}>
       <div className="row-between top">
@@ -52,6 +66,12 @@ export function AccountCard({ account, devices, now, warnAt, onEdit }: { account
             <div className="muted small">
               <M>{account.email}</M>
             </div>
+          )}
+          {account.project && (
+            <span className="project-tag">
+              <Icon name="folder" size={13} />
+              {account.project}
+            </span>
           )}
         </div>
         <StatusPill active={account.active} />
@@ -105,7 +125,7 @@ export function AccountCard({ account, devices, now, warnAt, onEdit }: { account
         <div className="row gap-8 muted xsmall">
           {account.renewalDate && (
             <span>
-              تمدید <M>{gregorianToJalali(account.renewalDate)}</M>
+              تمدید <M>{formatDate(account.renewalDate, calendar)}</M>
             </span>
           )}
           <RenewalPill date={account.renewalDate} now={now} />

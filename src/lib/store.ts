@@ -72,7 +72,7 @@ export function normalize(raw: unknown): Database {
   return {
     version: 1,
     devices: Array.isArray(r.devices) ? r.devices : [],
-    accounts: Array.isArray(r.accounts) ? r.accounts : [],
+    accounts: Array.isArray(r.accounts) ? r.accounts.map((a) => ({ ...a, project: a.project ?? '' })) : [],
     usage: Array.isArray(r.usage) ? r.usage : [],
     settings: { ...base.settings, ...(r.settings ?? {}), notify: { ...base.settings.notify, ...(r.settings?.notify ?? {}) } },
     notified: Array.isArray(r.notified) ? r.notified : [],

@@ -1227,3 +1227,273 @@ html.tray body {
   color: var(--ink-2);
   white-space: pre-line;
 }
+
+/* ---------- project ---------- */
+.project-tag {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 2px 9px;
+  border-radius: 7px;
+  background: var(--info-bg);
+  color: var(--info-fg);
+  font-size: 12px;
+  font-weight: 600;
+}
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-icon > svg {
+  position: absolute;
+  inset-inline-start: 14px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.input-icon .input {
+  flex: 1;
+  padding-inline-start: 40px;
+}
+
+/* ---------- small chip buttons ---------- */
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.chip-btn:hover {
+  border-color: var(--faint);
+}
+.chip-btn[aria-pressed='true'] {
+  background: var(--primary-bg);
+  border-color: var(--primary-bg);
+  color: var(--primary-fg);
+}
+.chip-btn[aria-pressed='true'] .faint {
+  color: inherit;
+  opacity: 0.7;
+}
+.chip-btn.danger-text {
+  color: var(--danger-fg);
+  border-color: transparent;
+}
+.gap-4 {
+  gap: 4px;
+}
+
+/* ---------- date picker ---------- */
+.datepicker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  cursor: pointer;
+  text-align: start;
+  color: var(--ink);
+}
+.date-field-text {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.popover {
+  position: absolute;
+  top: 52px;
+  inset-inline-start: 0;
+  z-index: 20;
+  width: 340px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.month-title {
+  min-width: 92px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.cal-head {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.cal-head.weekend,
+.cal-day.weekend {
+  color: var(--danger-fg);
+}
+.cal-day {
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.cal-day:hover {
+  background: var(--chip);
+}
+.cal-other {
+  font-size: 9.5px;
+  font-weight: 400;
+  color: var(--faint);
+}
+.cal-day.today {
+  box-shadow: inset 0 0 0 1.5px var(--total);
+}
+.cal-day[aria-selected='true'] {
+  background: var(--total);
+  color: #fff;
+}
+.cal-day[aria-selected='true'] .cal-other {
+  color: rgba(255, 255, 255, 0.75);
+}
+.cal-foot {
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ---------- time picker ---------- */
+.timepicker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+.time-readout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.time-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.time-readout.day .time-icon {
+  background: #fff1db;
+  color: #b25e00;
+}
+.time-readout.night .time-icon {
+  background: #1f2a4d;
+  color: #d9e1ff;
+}
+.stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stepper button {
+  width: 30px;
+  height: 18px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.stepper button:hover {
+  background: var(--chip);
+  color: var(--ink);
+}
+.time-digits {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.time-digits.colon {
+  margin-top: -2px;
+}
+.sky {
+  position: relative;
+  height: 38px;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: none;
+  /* Right-to-left: midnight at the right edge, the day passing toward the left. */
+  background: linear-gradient(
+    to left,
+    #1c2645 0%,
+    #2a3966 18%,
+    #e9a06d 25%,
+    #a8d4f2 33%,
+    #bfe0f5 50%,
+    #a8d4f2 66%,
+    #ef9265 75%,
+    #2a3966 83%,
+    #1c2645 100%
+  );
+}
+.sky:focus-visible {
+  outline: 2px solid var(--total);
+  outline-offset: 3px;
+}
+.sky-thumb {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  color: #3a3d44;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform: translate(50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.sky-ticks {
+  position: relative;
+  height: 16px;
+}
+.sky-tick {
+  position: absolute;
+  transform: translateX(50%);
+  font-size: 10.5px;
+  color: var(--faint);
+}

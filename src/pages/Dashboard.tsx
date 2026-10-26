@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { AccountCard } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { Countdown, M, Segmented } from '../components/ui';
-import { WEEKDAY_NAMES, formatTime, gregorianToJalali, jalaliOf } from '../lib/jalali';
+import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
 import { replaceDatabase, newId, useDb } from '../lib/store';
 import { sampleDatabase } from '../lib/sample';
 import { bestAccount, daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
@@ -33,7 +33,15 @@ function Recommendation({ account, kind }: { account: Account | null; kind: Limi
     <div className="card rec">
       <div className="stack-4 grow min0">
         <span className="muted small">{label}</span>
-        <span className="rec-name">{account.label}</span>
+        <span className="row wrap gap-8">
+          <span className="rec-name">{account.label}</span>
+          {account.project && (
+            <span className="project-tag">
+              <Icon name="folder" size={13} />
+              {account.project}
+            </span>
+          )}
+        </span>
         <span className="small ink-2">
           <M>{free}%</M> آزاد · ریست {WEEKDAY_NAMES[s.weekday]} <M>{s.time}</M>
         </span>
@@ -84,6 +92,7 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
           !q ||
           a.label.toLowerCase().includes(q) ||
           a.email.toLowerCase().includes(q) ||
+          a.project.toLowerCase().includes(q) ||
           a.deviceIds.some((id) => devices.get(id)?.name.toLowerCase().includes(q)),
       )
       .sort(sort === 'name' ? (x, y) => x.label.localeCompare(y.label, 'fa') : (x, y) => keys[sort](x) - keys[sort](y));
@@ -104,14 +113,14 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
         <div className="stack-2">
           <h1>داشبورد</h1>
           <div className="muted small">
-            {WEEKDAY_NAMES[now.getDay()]} · <M>{jalaliOf(now)}</M> · <M>{formatTime(now)}</M>
+            {WEEKDAY_NAMES[now.getDay()]} · <M>{formatDate(ymd(now), db.settings.calendar)}</M> · <M>{formatTime(now)}</M>
           </div>
         </div>
         <div className="row wrap gap-10">
           <label className="search">
             <Icon name="search" size={17} />
             <span className="sr-only">جستجو</span>
-            <input type="search" placeholder="جستجوی اکانت یا دستگاه…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input type="search" placeholder="جستجوی اکانت، پروژه یا دستگاه…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
           <button type="button" className="btn primary" onClick={onNew}>
             <Icon name="plus" size={17} stroke={2} />
@@ -178,7 +187,7 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
                     <M>{renewDays}</M> روز مانده
                   </span>
                   <span className="xsmall">
-                    {soonestRenewal.label} · <M>{gregorianToJalali(soonestRenewal.renewalDate!)}</M>
+                    {soonestRenewal.label} · <M>{formatDate(soonestRenewal.renewalDate!, db.settings.calendar)}</M>
                   </span>
                 </>
               ) : (
@@ -225,7 +234,7 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
             ) : (
               <div className="cards">
                 {list.map((a) => (
-                  <AccountCard key={a.id} account={a} devices={devices} now={now} warnAt={db.settings.warnAt} onEdit={() => onEdit(a.id)} />
+                  <AccountCard key={a.id} account={a} devices={devices} now={now} warnAt={db.settings.warnAt} calendar={db.settings.calendar} onEdit={() => onEdit(a.id)} />
                 ))}
               </div>
             )}
