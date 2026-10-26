@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AccountEditor } from './components/AccountEditor';
 import { Icon, type IconName } from './components/Icon';
+import { UpdateBanner } from './components/UpdateBanner';
 import { M } from './components/ui';
 import { isTauri } from './lib/storage';
 import { useDb, useStoreStatus } from './lib/store';
@@ -85,6 +86,7 @@ export function App() {
       </aside>
 
       <main className="content">
+        <UpdateBanner />
         {error && (
           <div className="banner error" role="alert">
             <Icon name="alert" size={16} />

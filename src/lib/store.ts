@@ -19,23 +19,42 @@ function emit() {
   for (const l of listeners) l();
 }
 
+function writeNow() {
+  const json = JSON.stringify(db, null, 2);
+  saving = saving
+    .then(() => saveRaw(json))
+    .then(() => {
+      if (saveError) {
+        saveError = null;
+        emit();
+      }
+    })
+    .catch((e) => {
+      saveError = String(e);
+      emit();
+    });
+  return saving;
+}
+
+let dirty = false;
+
 function scheduleSave() {
+  dirty = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    const json = JSON.stringify(db, null, 2);
-    saving = saving
-      .then(() => saveRaw(json))
-      .then(() => {
-        if (saveError) {
-          saveError = null;
-          emit();
-        }
-      })
-      .catch((e) => {
-        saveError = String(e);
-        emit();
-      });
+    dirty = false;
+    writeNow();
   }, 250);
+}
+
+/** Writes any pending change immediately; used before the app restarts for an update. */
+export async function flushSave() {
+  clearTimeout(saveTimer);
+  if (dirty) {
+    dirty = false;
+    writeNow();
+  }
+  await saving;
 }
 
 function commit(next: Database) {

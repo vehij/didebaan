@@ -1212,3 +1212,18 @@ html.tray body {
 .tray-foot .btn {
   min-height: 40px;
 }
+
+.banner.update {
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+.banner.update strong {
+  color: var(--ink);
+}
+.update-notes {
+  color: var(--ink-2);
+  white-space: pre-line;
+}

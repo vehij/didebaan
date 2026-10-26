@@ -3,6 +3,7 @@ import { M } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { ymd } from '../lib/jalali';
 import { sendNotification } from '../lib/notify';
+import { checkForUpdate, installUpdate, useUpdateState } from '../lib/updater';
 import { getDb, normalize, replaceDatabase, updateNotifySettings, updateSettings, useDb } from '../lib/store';
 import { dataDir, exportBackup, isTauri } from '../lib/storage';
 
@@ -14,11 +15,17 @@ export function Settings() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [autostart, setAutostart] = useState<boolean | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
+  const update = useUpdateState();
   const desktop = isTauri();
 
   useEffect(() => {
     dataDir().then(setDir).catch(() => setDir(null));
     if (desktop) {
+      import('@tauri-apps/api/app')
+        .then((m) => m.getVersion())
+        .then(setVersion)
+        .catch(() => setVersion(null));
       import('@tauri-apps/plugin-autostart')
         .then((m) => m.isEnabled())
         .then(setAutostart)
@@ -119,6 +126,35 @@ export function Settings() {
           <p className="muted xsmall">نوتیفیکیشن‌ها فقط در نسخه‌ی دسکتاپ فرستاده می‌شوند.</p>
         )}
       </section>
+
+      {desktop && (
+        <section className="card settings-section">
+          <h2 className="section-title">به‌روزرسانی</h2>
+          <div className="row-between wrap gap-12">
+            <span className="small">
+              نسخه‌ی نصب‌شده: <M>{version ?? '—'}</M>
+            </span>
+            {update.status === 'available' ? (
+              <button type="button" className="btn primary" onClick={installUpdate}>
+                نصب نسخه‌ی <M>{update.version}</M>
+              </button>
+            ) : (
+              <button type="button" className="btn" disabled={update.status === 'checking' || update.status === 'downloading'} onClick={() => checkForUpdate()}>
+                <Icon name="refresh" size={16} />
+                بررسی نسخه‌ی جدید
+              </button>
+            )}
+          </div>
+          <p className="muted xsmall">
+            {update.status === 'checking' && 'در حال بررسی…'}
+            {update.status === 'none' && 'نسخه‌ی نصب‌شده جدیدترین است.'}
+            {update.status === 'downloading' && 'در حال دانلود نسخه‌ی جدید؛ بعد از نصب، اپ خودش دوباره باز می‌شود.'}
+            {update.status === 'error' && <span className="error">بررسی نشد. اتصال اینترنت را چک کن و دوباره امتحان کن.</span>}
+            {(update.status === 'idle' || update.status === 'available') &&
+              'دیده‌بان هر چند ساعت خودش نسخه‌ی جدید را بررسی می‌کند و اگر آماده باشد خبرت می‌کند.'}
+          </p>
+        </section>
+      )}
 
       {desktop && (
         <section className="card settings-section">

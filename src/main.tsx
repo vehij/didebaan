@@ -7,6 +7,7 @@ import { App } from './App';
 import { checkNotifications } from './lib/notify';
 import { isTauri } from './lib/storage';
 import { initStore } from './lib/store';
+import { startUpdateChecks } from './lib/updater';
 import { TrayPanel } from './pages/TrayPanel';
 
 async function start() {
@@ -17,6 +18,7 @@ async function start() {
   if (isPanel) document.documentElement.classList.add('tray');
   // Only the dashboard window writes the data file and sends notifications.
   await initStore(isPanel ? { readOnly: true } : { onTick: checkNotifications });
+  if (!isPanel) startUpdateChecks();
   createRoot(document.getElementById('root')!).render(<StrictMode>{isPanel ? <TrayPanel /> : <App />}</StrictMode>);
 }
 
