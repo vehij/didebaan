@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { shouldOpenUp } from '../lib/space';
 import { Icon } from './Icon';
 
 export interface SelectOption<T extends string | number> {
@@ -38,9 +39,7 @@ export function Select<T extends string | number>({
   }, [open]);
 
   const show = () => {
-    const rect = root.current?.getBoundingClientRect();
-    // Open upward when there is no room for the list below the field.
-    setUp(!!rect && window.innerHeight - rect.bottom < Math.min(320, options.length * 40 + 16) && rect.top > window.innerHeight - rect.bottom);
+    setUp(shouldOpenUp(root.current, Math.min(320, options.length * 40 + 16) + 8));
     setActive(Math.max(0, options.findIndex((o) => o.value === value)));
     setOpen(true);
   };

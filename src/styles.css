@@ -2401,3 +2401,64 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =====================================================================
+   Layout: dialogs keep their own height; pages use wide screens
+   ===================================================================== */
+
+/* The dialog is a fixed panel: header and footer stay put, only the middle scrolls. */
+.overlay {
+  overflow: hidden;
+  align-items: center;
+  padding: 32px 16px;
+}
+.modal {
+  max-height: calc(100vh - 64px);
+  overflow: hidden;
+}
+.modal-head,
+.modal-foot {
+  flex: none;
+}
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.modal-foot {
+  position: static;
+}
+.popover.up {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+/* Center the content and give wide monitors more columns instead of empty space. */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.page {
+  width: 100%;
+  max-width: 1720px;
+  margin-inline: auto;
+}
+.cards {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+@media (min-width: 1700px) {
+  .page {
+    padding-inline: 56px;
+  }
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.banner {
+  width: calc(100% - 80px);
+  max-width: 1640px;
+  margin-inline: auto;
+}

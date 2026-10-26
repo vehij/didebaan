@@ -13,6 +13,7 @@ import {
   type YearMonth,
 } from '../lib/jalali';
 import { addMonths, daysUntil } from '../lib/time';
+import { shouldOpenUp } from '../lib/space';
 import { Icon } from './Icon';
 import { M, Segmented } from './ui';
 
@@ -37,6 +38,7 @@ export function DatePicker({
   label: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
   const [view, setView] = useState<YearMonth>(() => yearMonthOf(value ? fromYmd(value) : new Date(), calendar));
   const root = useRef<HTMLDivElement>(null);
   const today = ymd(new Date());
@@ -75,6 +77,7 @@ export function DatePicker({
         aria-label={label}
         onClick={() => {
           show(value);
+          setUp(shouldOpenUp(root.current, 420));
           setOpen((o) => !o);
         }}
       >
@@ -108,7 +111,7 @@ export function DatePicker({
 
       {open && (
         <div
-          className="popover calendar"
+          className={`popover calendar ${up ? 'up' : ''}`}
           role="dialog"
           aria-label={label}
           onKeyDown={(e) => {

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Didebaan Companion",
   "short_name": "دیده‌بان همراه",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Sends this browser's claude.ai weekly usage (all models and Fable), reset times and subscription renewal date to your Didebaan app.",
   "permissions": [
     "alarms",

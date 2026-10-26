@@ -777,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "didebaan"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "serde_json",
  "tauri",
