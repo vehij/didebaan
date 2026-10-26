@@ -16,6 +16,7 @@ edit('package-lock.json', (s) => {
   lock.packages[''].version = version;
   return JSON.stringify(lock, null, 2) + '\n';
 });
+edit('extension/manifest.json', (s) => s.replace(/("version":\s*")[^"]+(")/, `$1${version}$2`));
 edit('src-tauri/Cargo.toml', (s) => s.replace(/^version = "[^"]+"/m, `version = "${version}"`));
 edit('src-tauri/Cargo.lock', (s) => s.replace(/(name = "didebaan"\nversion = ")[^"]+(")/, `$1${version}$2`));
 console.log(`Version set to ${version}`);

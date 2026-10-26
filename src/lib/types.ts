@@ -10,6 +10,8 @@ export interface Device {
   os: string;
   note: string;
   createdAt: string;
+  /** Present once the browser extension has reported usage for this account's email. */
+  remote?: RemoteInfo | null;
 }
 
 /** Weekday follows JS Date#getDay(): 0 = Sunday … 6 = Saturday. */
@@ -23,6 +25,16 @@ export interface WeeklyLimit {
   resetTime: string;
   /** When usedPct was last entered (ISO). Used to detect a reset that happened since. */
   updatedAt: string | null;
+}
+
+/** What the browser extension last reported for an account, via the sync server. */
+export interface RemoteInfo {
+  capturedAt: string;
+  receivedAt: string;
+  device: string | null;
+  orgName: string | null;
+  /** Share of this week's usage per product (Claude Code, Chats, Cowork, Other). */
+  products: { name: string; pct: number }[];
 }
 
 export interface Account {
@@ -43,6 +55,8 @@ export interface Account {
   remindDaysBefore: number;
   note: string;
   createdAt: string;
+  /** Present once the browser extension has reported usage for this account's email. */
+  remote?: RemoteInfo | null;
 }
 
 export interface UsageEntry {
@@ -52,7 +66,7 @@ export interface UsageEntry {
   total: number;
   fable: number;
   /** "manual" when entered by the user, "reset" when zeroed by a weekly reset. */
-  source: 'manual' | 'reset';
+  source: 'manual' | 'reset' | 'sync';
 }
 
 export interface NotifySettings {
@@ -70,6 +84,8 @@ export interface Settings {
   calendar: 'jalali' | 'gregorian';
   thisDeviceId: string | null;
   notify: NotifySettings;
+  /** Sync server the browser extensions report to (empty = the project's default); `key` is null until sync is turned on. */
+  sync: { url: string; key: string | null };
 }
 
 export interface Database {
@@ -82,11 +98,14 @@ export interface Database {
   notified: string[];
 }
 
+/** The project's own Cloudflare Worker (see sync/). */
+export const DEFAULT_SYNC_URL = 'https://didebaan-sync.workers.dev';
+
 export const emptyDatabase = (): Database => ({
   version: 1,
   devices: [],
   accounts: [],
   usage: [],
-  settings: { warnAt: 85, calendar: 'jalali', thisDeviceId: null, notify: { limit: true, reset: true, renewal: true } },
+  settings: { warnAt: 85, calendar: 'jalali', thisDeviceId: null, notify: { limit: true, reset: true, renewal: true }, sync: { url: '', key: null } },
   notified: [],
 });

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>دیده‌بان همراه</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="icons/32.png" alt="" width="28" height="28" />
+      <div>
+        <strong>دیده‌بان همراه</strong>
+        <span id="state" class="muted"></span>
+      </div>
+    </header>
+
+    <section id="pair" hidden>
+      <p>در دیده‌بان روی مکت به <b>تنظیمات › همگام‌سازی با مرورگر</b> برو، «کد اتصال» را کپی کن و اینجا بچسبان.</p>
+      <label for="code" class="sr-only">کد اتصال</label>
+      <textarea id="code" rows="3" dir="ltr" placeholder="DBN1.…"></textarea>
+      <button id="connect" class="primary">اتصال</button>
+      <p id="pair-error" class="error" hidden>این کد معتبر نیست. دوباره از دیده‌بان کپی کن.</p>
+    </section>
+
+    <section id="main" hidden>
+      <div id="login" class="notice" hidden>
+        در همین مرورگر به <a href="https://claude.ai/login" target="_blank" rel="noreferrer">claude.ai</a> وارد شو تا مصرف خوانده شود.
+      </div>
+      <div id="error" class="notice error" hidden></div>
+      <div id="reports"></div>
+      <p class="muted small" id="last"></p>
+      <label class="field">
+        <span>نام این دستگاه (در دیده‌بان نشان داده می‌شود)</span>
+        <input id="device" type="text" placeholder="مثلاً MacBook Air" />
+      </label>
+      <div class="row">
+        <button id="sync" class="primary">همگام‌سازی الان</button>
+        <a class="button" href="https://claude.ai/settings/usage" target="_blank" rel="noreferrer">صفحه‌ی Usage</a>
+      </div>
+      <details>
+        <summary>عیب‌یابی</summary>
+        <p class="muted small">اگر عددها خوانده نشد، این متن را کپی کن و برای پشتیبانی بفرست. اسم، ایمیل و متن‌ها از آن حذف شده‌اند.</p>
+        <textarea id="debug" rows="6" dir="ltr" readonly></textarea>
+        <button id="unpair" class="link">قطع اتصال این مرورگر</button>
+      </details>
+    </section>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

@@ -8,7 +8,7 @@ import { Icon } from './Icon';
 import { TimePicker } from './TimePicker';
 import { ConfirmDelete, M, Modal, Segmented } from './ui';
 
-function blankAccount(): Account {
+export function blankAccount(): Account {
   const now = new Date();
   const limit: WeeklyLimit = { usedPct: 0, resetWeekday: now.getDay() as Weekday, resetTime: formatTime(now), updatedAt: null };
   return {

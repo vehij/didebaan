@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Didebaan Companion",
+  "short_name": "دیده‌بان همراه",
+  "version": "0.5.0",
+  "description": "Sends this browser's claude.ai weekly usage (all models and Fable) to your Didebaan app every two hours.",
+  "permissions": [
+    "alarms",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://*.workers.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://claude.ai/settings/usage*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "دیده‌بان همراه",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "parse.js"
+      ],
+      "matches": [
+        "https://claude.ai/*"
+      ]
+    }
+  ]
+}

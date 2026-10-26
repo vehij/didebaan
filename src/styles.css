@@ -1497,3 +1497,35 @@ html.tray body {
   font-size: 10.5px;
   color: var(--faint);
 }
+
+/* ---------- automatic sync ---------- */
+.remote {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.remote > .xsmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.warn-text {
+  color: var(--warn-fg);
+}
+.products-bar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.products-bar span {
+  flex-basis: 0;
+  min-width: 4px;
+}
+.unmatched {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+}

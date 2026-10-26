@@ -1,0 +1,10 @@
+# Didebaan sync endpoint: browser extensions post claude.ai usage here, the desktop app reads it back.
+name = "didebaan-sync"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+account_id = "c7f7a246c838ffd1c28afac45cb98f9a"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "DATA"
+id = "64eb17b8b6854507b2120c48603422bd"

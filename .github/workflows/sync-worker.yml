@@ -1,0 +1,40 @@
+name: Deploy sync server
+
+# Deploys the Cloudflare Worker in sync/ that browser extensions report usage to.
+on:
+  push:
+    paths: ['sync/**', '.github/workflows/sync-worker.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the Cloudflare token
+        id: token
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "::warning::Repository secret CLOUDFLARE_API_TOKEN is missing, so the sync server was not deployed. See README."
+          # A manual run should say clearly that nothing happened.
+          [ "${{ github.event_name }}" = "workflow_dispatch" ] && exit 1 || exit 0
+
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          node-version: 22
+
+      - if: steps.token.outputs.ok == 'true'
+        run: npm ci
+      - if: steps.token.outputs.ok == 'true'
+        run: npx vitest run sync
+
+      - uses: cloudflare/wrangler-action@v3
+        if: steps.token.outputs.ok == 'true'
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: sync
+          command: deploy

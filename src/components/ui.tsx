@@ -121,3 +121,13 @@ export function ConfirmDelete({ label, onConfirm, armed, setArmed }: { label: st
     </div>
   );
 }
+
+/** "۲۰ دقیقه پیش" with Latin digits. */
+export function Ago({ iso, now }: { iso: string; now: Date }) {
+  const min = Math.max(0, Math.round((now.getTime() - Date.parse(iso)) / 60000));
+  if (min < 1) return <>همین الان</>;
+  if (min < 60) return <><M>{min}</M> دقیقه پیش</>;
+  const h = Math.round(min / 60);
+  if (h < 48) return <><M>{h}</M> ساعت پیش</>;
+  return <><M>{Math.round(h / 24)}</M> روز پیش</>;
+}

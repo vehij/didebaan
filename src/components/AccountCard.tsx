@@ -3,7 +3,7 @@ import { WEEKDAY_NAMES, formatDate, type CalendarKind } from '../lib/jalali';
 import { daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account, Device } from '../lib/types';
 import { Icon } from './Icon';
-import { Bar, Countdown, M } from './ui';
+import { Ago, Bar, Countdown, M } from './ui';
 
 const LIMITS: { kind: LimitKind; label: ReactNode; color: string }[] = [
   { kind: 'total', label: 'لیمیت هفتگی کل', color: 'var(--total)' },
@@ -17,6 +17,17 @@ const LIMITS: { kind: LimitKind; label: ReactNode; color: string }[] = [
     color: 'var(--fable)',
   },
 ];
+
+/** Readings older than this are flagged, since the extension sends every two hours. */
+const STALE_MS = 6 * 60 * 60 * 1000;
+
+const PRODUCT_COLORS: Record<string, string> = {
+  'Claude Code': 'var(--total)',
+  Cowork: '#8b5cf6',
+  Chats: '#14a37f',
+};
+
+export const productColor = (name: string) => PRODUCT_COLORS[name] ?? 'var(--off-dot)';
 
 export function RenewalPill({ date, now }: { date: string | null; now: Date }) {
   if (!date) return <span className="pill">تاریخ تمدید ثبت نشده</span>;
@@ -106,6 +117,41 @@ export function AccountCard({
         <div className="inactive-box">
           <strong>این اکانت غیرفعال است</strong>
           <span>مصرف و زمان ریستش دنبال نمی‌شود.</span>
+        </div>
+      )}
+
+      {account.remote && (
+        <div className="remote">
+          {account.active && account.remote.products.some((p) => p.pct > 0) && (
+            <div className="stack-6">
+              <div className="products-bar" role="img" aria-label={account.remote.products.map((p) => `${p.name} ${p.pct}%`).join('، ')}>
+                {account.remote.products
+                  .filter((p) => p.pct > 0)
+                  .map((p) => (
+                    <span key={p.name} style={{ flexGrow: p.pct, background: productColor(p.name) }} />
+                  ))}
+              </div>
+              <div className="row wrap gap-10 xsmall muted">
+                {account.remote.products
+                  .filter((p) => p.pct > 0)
+                  .map((p) => (
+                    <span key={p.name} className="row gap-6">
+                      <span className="swatch" style={{ background: productColor(p.name) }} />
+                      <M>{p.name}</M> <M className="ink">{p.pct}%</M>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+          <span className={`xsmall ${now.getTime() - Date.parse(account.remote.capturedAt) > STALE_MS ? 'warn-text' : 'muted'}`}>
+            <Icon name="refresh" size={12} /> خودکار · <Ago iso={account.remote.capturedAt} now={now} />
+            {account.remote.device && (
+              <>
+                {' '}
+                از <M>{account.remote.device}</M>
+              </>
+            )}
+          </span>
         </div>
       )}
 

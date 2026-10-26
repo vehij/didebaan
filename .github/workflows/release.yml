@@ -67,6 +67,7 @@ jobs:
       - run: npm test
 
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -95,3 +96,14 @@ jobs:
                **System Settings › Privacy & Security** برو و پایین صفحه کنار پیام Didebaan روی **Open Anyway** بزن.
             4. اگر به‌جایش گفت «Didebaan is damaged and can't be opened»، راهنمای «اگر اپ باز نشد» در
                [README](https://github.com/vehij/didebaan#اگر-اپ-باز-نشد) را ببین؛ با یک دستور کوتاه درست می‌شود.
+
+            فایل `didebaan-companion.zip` افزونه‌ی Chrome برای همگام‌سازی خودکار مصرف است؛ راهنمای نصبش در
+            [README](https://github.com/vehij/didebaan#همگام‌سازی-خودکار-مصرف) است.
+
+      - name: Attach the browser extension
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.tauri.outputs.appVersion }}
+        run: |
+          (cd extension && zip -qr ../didebaan-companion.zip . -x 'test/*')
+          gh release upload "v$VERSION" didebaan-companion.zip --clobber

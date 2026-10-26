@@ -4,7 +4,11 @@ import { Icon } from '../components/Icon';
 import { ymd } from '../lib/jalali';
 import { sendNotification } from '../lib/notify';
 import { checkForUpdate, installUpdate, useUpdateState } from '../lib/updater';
-import { getDb, normalize, replaceDatabase, updateNotifySettings, updateSettings, useDb } from '../lib/store';
+import { disableSync, enableSync, pairingCode, syncNow, useSyncState } from '../lib/sync';
+import { blankAccount } from '../components/AccountEditor';
+import { Ago } from '../components/ui';
+import { getDb, normalize, replaceDatabase, saveAccount, updateNotifySettings, updateSettings, useDb } from '../lib/store';
+import { useNow } from '../lib/useNow';
 import { dataDir, exportBackup, isTauri } from '../lib/storage';
 
 export function Settings() {
@@ -17,6 +21,11 @@ export function Settings() {
   const [autostart, setAutostart] = useState<boolean | null>(null);
   const [version, setVersion] = useState<string | null>(null);
   const update = useUpdateState();
+  const sync = useSyncState();
+  const now = useNow();
+  const code = pairingCode(db.settings);
+  const [copied, setCopied] = useState(false);
+  const [confirmOff, setConfirmOff] = useState(false);
   const desktop = isTauri();
 
   useEffect(() => {
@@ -77,6 +86,103 @@ export function Settings() {
           <h1>تنظیمات</h1>
         </div>
       </header>
+
+      <section className="card settings-section">
+        <h2 className="section-title">همگام‌سازی خودکار مصرف</h2>
+        <p className="muted small">
+          افزونه‌ی <strong>دیده‌بان همراه</strong> روی Chrome هر لپ‌تاپ، هر دو ساعت مصرف هفتگی و <M>Fable</M> اکانتی را که در claude.ai وارد است
+          می‌خواند و می‌فرستد؛ دیده‌بان هر چند دقیقه آن را می‌گیرد و کارت اکانتی را که همان ایمیل را دارد به‌روز می‌کند.
+        </p>
+        {!code ? (
+          <div className="row">
+            <button type="button" className="btn primary" onClick={enableSync}>
+              <Icon name="refresh" size={16} />
+              فعال‌سازی همگام‌سازی
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="stack-6">
+              <span className="field-label">کد اتصال — در پنجره‌ی افزونه روی هر لپ‌تاپ بچسبان</span>
+              <div className="row gap-8">
+                <input className="input mono ltr grow" dir="ltr" readOnly value={code} onFocus={(e) => e.currentTarget.select()} aria-label="کد اتصال" />
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(code);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? 'کپی شد' : 'کپی'}
+                </button>
+              </div>
+              <span className="xsmall muted">این کد مثل رمز است؛ فقط روی دستگاه‌های خودت استفاده‌اش کن.</span>
+            </div>
+            <div className="row-between wrap gap-12">
+              <span className="small">
+                {sync.error ? (
+                  <span className="error">آخرین تلاش ناموفق بود ({sync.error}).</span>
+                ) : sync.lastSyncAt ? (
+                  <>
+                    آخرین همگام‌سازی: <Ago iso={sync.lastSyncAt} now={now} />
+                  </>
+                ) : (
+                  'هنوز همگام نشده'
+                )}
+              </span>
+              <div className="row gap-8">
+                <button type="button" className="btn" disabled={sync.busy} onClick={() => syncNow()}>
+                  <Icon name="refresh" size={16} />
+                  {sync.busy ? 'در حال همگام‌سازی…' : 'همگام‌سازی الان'}
+                </button>
+                {confirmOff ? (
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => {
+                      disableSync();
+                      setConfirmOff(false);
+                    }}
+                  >
+                    مطمئنم، خاموش کن
+                  </button>
+                ) : (
+                  <button type="button" className="btn ghost" onClick={() => setConfirmOff(true)}>
+                    خاموش کردن
+                  </button>
+                )}
+              </div>
+            </div>
+            {confirmOff && <p className="xsmall muted">با خاموش کردن، این کد باطل می‌شود و بعداً باید کد تازه را دوباره در همه‌ی افزونه‌ها بچسبانی.</p>}
+            {sync.unmatched.length > 0 && (
+              <div className="stack-8">
+                <span className="field-label">این اکانت‌ها در افزونه هستند ولی در دیده‌بان نه:</span>
+                {sync.unmatched.map((r) => (
+                  <div key={r.email} className="row-between gap-12 unmatched">
+                    <span className="small">
+                      <M>{r.email}</M>
+                      {r.device && <span className="muted"> · از <M>{r.device}</M></span>}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => {
+                        saveAccount({ ...blankAccount(), label: r.email.split('@')[0], email: r.email });
+                        syncNow();
+                      }}
+                    >
+                      <Icon name="plus" size={15} />
+                      افزودن
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
       <section className="card settings-section">
         <h2 className="section-title">تقویم</h2>

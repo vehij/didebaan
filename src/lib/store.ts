@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { loadRaw, saveRaw } from './storage';
+import { applyRemoteReports, type RemoteReport } from './remote';
 import { applyResets } from './time';
 import { emptyDatabase, type Account, type Database, type Device, type Settings } from './types';
 
@@ -74,7 +75,7 @@ export function normalize(raw: unknown): Database {
     devices: Array.isArray(r.devices) ? r.devices : [],
     accounts: Array.isArray(r.accounts) ? r.accounts.map((a) => ({ ...a, project: a.project ?? '' })) : [],
     usage: Array.isArray(r.usage) ? r.usage : [],
-    settings: { ...base.settings, ...(r.settings ?? {}), notify: { ...base.settings.notify, ...(r.settings?.notify ?? {}) } },
+    settings: { ...base.settings, ...(r.settings ?? {}), notify: { ...base.settings.notify, ...(r.settings?.notify ?? {}) }, sync: { ...base.settings.sync, ...(r.settings?.sync ?? {}) } },
     notified: Array.isArray(r.notified) ? r.notified : [],
   };
 }
@@ -135,7 +136,10 @@ export function getDb(): Database {
 
 export function saveAccount(account: Account) {
   const prev = db.accounts.find((a) => a.id === account.id);
-  const usageChanged = !prev || prev.total.usedPct !== account.total.usedPct || prev.fable.usedPct !== account.fable.usedPct;
+  // A brand-new account with no usage typed in has no reading yet, so the extension's first report can fill it.
+  const usageChanged = prev
+    ? prev.total.usedPct !== account.total.usedPct || prev.fable.usedPct !== account.fable.usedPct
+    : account.total.usedPct > 0 || account.fable.usedPct > 0;
   const now = new Date().toISOString();
   const next: Account = usageChanged
     ? { ...account, total: { ...account.total, updatedAt: now }, fable: { ...account.fable, updatedAt: now } }
@@ -177,4 +181,11 @@ export function updateSettings(patch: Partial<Settings>) {
 
 export function replaceDatabase(next: Database) {
   commit(applyResets(normalize(next), new Date(), newId));
+}
+
+/** Applies browser-extension reports and returns the ones that match no account. */
+export function applyRemote(reports: RemoteReport[]): RemoteReport[] {
+  const { db: next, unmatched } = applyRemoteReports(db, reports, newId);
+  commit(applyResets(next, new Date(), newId));
+  return unmatched;
 }
