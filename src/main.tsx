@@ -11,7 +11,17 @@ import { startSync } from './lib/sync';
 import { startUpdateChecks } from './lib/updater';
 import { TrayPanel } from './pages/TrayPanel';
 
+/** Marks the page idle while its window is hidden or not in front, so looping animations pause. */
+function trackIdle() {
+  const update = () => document.documentElement.toggleAttribute('data-idle', document.hidden || !document.hasFocus());
+  window.addEventListener('focus', update);
+  window.addEventListener('blur', update);
+  document.addEventListener('visibilitychange', update);
+  update();
+}
+
 async function start() {
+  trackIdle();
   // In a plain browser, `#tray` previews the menu bar panel during development.
   const isPanel = isTauri()
     ? (await import('@tauri-apps/api/window')).getCurrentWindow().label === 'tray'

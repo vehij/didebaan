@@ -1922,16 +1922,6 @@ body {
   align-items: flex-start;
 }
 
-/* status dot breathes while active */
-.status.on .dot {
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok-dot) 60%, transparent);
-  animation: breathe 2.4s ease-in-out infinite;
-}
-@keyframes breathe {
-  50% {
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok-dot) 0%, transparent);
-  }
-}
 
 .tray-kind {
   display: flex;
@@ -1946,9 +1936,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .status.on .dot {
-    animation: none;
-  }
   .account-card:hover,
   .device-card:hover {
     transform: none;
@@ -2566,9 +2553,43 @@ body {
 .work-toggle.working .dot,
 .work-dot,
 .row-status.working {
+  position: relative;
   background: var(--ok-dot);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok-dot) 60%, transparent);
-  animation: breathe 2.4s ease-in-out infinite;
+}
+/*
+ * A ping ring around "working" dots. Only transform and opacity animate, so it runs on the
+ * compositor without repainting (box-shadow repainted every frame and, under the glass blur,
+ * kept the GPU busy). It also pauses whenever the window is not in front.
+ */
+.work-toggle.working .dot::after,
+.work-dot::after,
+.row-status.working::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ok-dot);
+  animation: ping 2.4s ease-out infinite;
+}
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  60%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+:root[data-idle] .work-toggle.working .dot::after,
+:root[data-idle] .work-dot::after,
+:root[data-idle] .row-status.working::after,
+:root[data-idle] .spin,
+:root[data-idle] .loader-eye,
+:root[data-idle] .loader-bar::after,
+:root[data-idle] .banner.update .downloading::after {
+  animation-play-state: paused;
 }
 .work-dot {
   width: 6px;
@@ -2605,10 +2626,11 @@ body {
   overflow: hidden;
 }
 @media (prefers-reduced-motion: reduce) {
-  .work-toggle.working .dot,
-  .work-dot,
-  .row-status.working {
+  .work-toggle.working .dot::after,
+  .work-dot::after,
+  .row-status.working::after {
     animation: none;
+    opacity: 0;
   }
 }
 
