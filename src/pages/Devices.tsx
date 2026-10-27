@@ -2,42 +2,16 @@ import { useState } from 'react';
 import { StatusPill } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { ProjectInput, ProjectTag } from '../components/ProjectInput';
-import { Ago, Bar, ConfirmDelete, M, Modal, Segmented } from '../components/ui';
-import { allProjects, deleteDevice, newId, saveAccount, saveDevice, setDeviceStatus, updateSettings, useDb } from '../lib/store';
+import { Bar, ConfirmDelete, M, Modal, Segmented } from '../components/ui';
+import { STATUS_LABEL, WorkToggle } from '../components/DeviceStatus';
+import { allProjects, deleteDevice, newId, saveAccount, saveDevice, updateSettings, useDb } from '../lib/store';
 import { ALL_PROJECTS, NO_PROJECT, deviceInProject } from '../lib/projects';
 import { Select } from '../components/Select';
 import type { Device, DeviceKind, DeviceStatus } from '../lib/types';
 import { useNow } from '../lib/useNow';
 
 const KIND_LABEL: Record<DeviceKind, string> = { laptop: 'لپ‌تاپ', desktop: 'دسکتاپ', server: 'سرور' };
-const STATUS_LABEL: Record<DeviceStatus, string> = { working: 'در حال کار', idle: 'بیکار' };
-
 type StatusFilter = 'all' | DeviceStatus;
-
-/** One-click switch between working and idle, with how long the device has been in that state. */
-function WorkToggle({ device, now }: { device: Device; now: Date }) {
-  const working = device.status === 'working';
-  return (
-    <div className="work-toggle-wrap">
-      <button
-        type="button"
-        className={`work-toggle ${device.status}`}
-        aria-pressed={working}
-        aria-label={`وضعیت ${device.name}: ${STATUS_LABEL[device.status]}`}
-        title={working ? 'بزن تا بیکار شود' : 'بزن تا در حال کار شود'}
-        onClick={() => setDeviceStatus(device.id, working ? 'idle' : 'working')}
-      >
-        <span className="dot" />
-        {STATUS_LABEL[device.status]}
-      </button>
-      {device.statusAt && (
-        <span className="xsmall faint">
-          <Ago iso={device.statusAt} now={now} />
-        </span>
-      )}
-    </div>
-  );
-}
 
 function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose: () => void }) {
   const db = useDb();

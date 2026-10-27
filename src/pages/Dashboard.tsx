@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react';
 import { AccountCard } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { Ago, Countdown, M, Segmented } from '../components/ui';
+import { WorkToggle } from '../components/DeviceStatus';
+import { ProjectTag } from '../components/ProjectInput';
+import { toneStyle } from '../components/UsageMeter';
 import { syncNow, useSyncState } from '../lib/sync';
 import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
 import { allProjects, replaceDatabase, newId, useDb } from '../lib/store';
@@ -9,7 +12,7 @@ import { ALL_PROJECTS, NO_PROJECT, inProject } from '../lib/projects';
 import { Select } from '../components/Select';
 import { sampleDatabase } from '../lib/sample';
 import { bestAccount, daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
-import type { Account } from '../lib/types';
+import type { Account, Database } from '../lib/types';
 import { useNow } from '../lib/useNow';
 import { usageColor } from '../lib/tone';
 
@@ -96,6 +99,70 @@ function SyncButton({ now }: { now: Date }) {
         'همگام‌سازی'
       )}
     </button>
+  );
+}
+
+/** Devices someone is working on right now, with how much room each logged-in account has left. */
+function WorkingDevices({ db, now, onEdit }: { db: Database; now: Date; onEdit: (id: string) => void }) {
+  const working = db.devices.filter((d) => d.status === 'working');
+  return (
+    <section className="stack-12">
+      <div className="row gap-8 baseline">
+        <h2 className="section-title">دستگاه‌های در حال کار</h2>
+        <span className="muted small">
+          <M>{working.length}</M> از <M>{db.devices.length}</M> دستگاه
+        </span>
+      </div>
+      {working.length === 0 ? (
+        <p className="muted small">الان هیچ دستگاهی در حال کار نیست. وضعیت دستگاه‌ها را از صفحه‌ی دستگاه‌ها مشخص کن.</p>
+      ) : (
+        <div className="working-devices">
+          {working.map((d) => {
+            const accounts = db.accounts.filter((a) => a.deviceIds.includes(d.id));
+            return (
+              <div key={d.id} className="card working-device">
+                <div className="row top-align gap-12">
+                  <div className="device-icon sm">
+                    <Icon name={d.kind} size={20} stroke={1.6} />
+                  </div>
+                  <div className="stack-4 min0 grow">
+                    <div className="row wrap gap-8">
+                      <M className="device-name">{d.name}</M>
+                      {db.settings.thisDeviceId === d.id && <span className="tag info">این دستگاه</span>}
+                    </div>
+                    <ProjectTag project={d.project} />
+                  </div>
+                  <WorkToggle device={d} now={now} />
+                </div>
+                {d.note && <p className="device-note clamp-2">{d.note}</p>}
+                <div className="row wrap gap-6">
+                  {accounts.length === 0 && <span className="muted xsmall">اکانتی رویش لاگین نیست</span>}
+                  {accounts.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      className={`dev-account ${a.active ? '' : 'inactive'}`}
+                      style={a.active ? toneStyle(a.total.usedPct) : undefined}
+                      onClick={() => onEdit(a.id)}
+                      title={a.active ? `کل ${a.total.usedPct}% · Fable ${a.fable.usedPct}%` : 'غیرفعال'}
+                    >
+                      {a.label}
+                      {a.active ? (
+                        <span className="dev-account-free">
+                          <M>{100 - a.total.usedPct}%</M> آزاد
+                        </span>
+                      ) : (
+                        <span className="dev-account-free">غیرفعال</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -246,6 +313,8 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
               <Recommendation account={bestAccount(db.accounts, 'fable', now)} kind="fable" />
             </div>
           </section>
+
+          {db.devices.length > 0 && <WorkingDevices db={db} now={now} onEdit={onEdit} />}
 
           <section className="stack-14">
             <div className="row-between wrap gap-12">

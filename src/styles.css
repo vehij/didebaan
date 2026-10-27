@@ -1995,7 +1995,8 @@ body {
 /* Older WebKit without oklch(): the same hue scale in HSL. */
 @supports not (color: oklch(0.5 0.1 100)) {
   .meter,
-  .monogram {
+  .monogram,
+  .dev-account {
     --tone: hsl(var(--tone-h, 150) 62% 44%);
     --tone-soft: hsl(var(--tone-h, 150) 62% 44% / 0.16);
     --tone-text: hsl(var(--tone-h, 150) 70% 32%);
@@ -2028,7 +2029,8 @@ body {
 .meter,
 .meter-icon,
 .monogram,
-.range.toned {
+.range.toned,
+.dev-account {
   --tone: oklch(var(--tone-l) 0.17 var(--tone-h, 150));
   --tone-soft: oklch(var(--tone-l) 0.17 var(--tone-h, 150) / 0.16);
   --tone-text: oklch(var(--tone-text-l) 0.15 var(--tone-h, 150));
@@ -2607,5 +2609,78 @@ body {
   .work-dot,
   .row-status.working {
     animation: none;
+  }
+}
+
+/* ── Dashboard: devices at work ─────────────────────────── */
+.working-devices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+.working-devices > * {
+  animation: rise 0.5s var(--ease-out) both;
+}
+.working-devices > :nth-child(2) {
+  animation-delay: 50ms;
+}
+.working-devices > :nth-child(3) {
+  animation-delay: 100ms;
+}
+.working-device {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.device-icon.sm {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.device-note.clamp-2 {
+  -webkit-line-clamp: 2;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.dev-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--tone-text, var(--ink-2));
+  background: var(--tone-soft, var(--chip));
+  transition: transform 0.15s, filter 0.15s;
+}
+.dev-account:hover {
+  filter: brightness(0.97) saturate(1.15);
+  transform: translateY(-1px);
+}
+.dev-account.inactive {
+  --tone-text: var(--off-fg);
+  color: var(--off-fg);
+  background: var(--off-bg);
+}
+.dev-account-free {
+  font-size: 11.5px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+@media (prefers-reduced-motion: reduce) {
+  .working-devices > * {
+    animation: none;
+  }
+  .dev-account:hover {
+    transform: none;
   }
 }
