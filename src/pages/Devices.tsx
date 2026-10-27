@@ -2,16 +2,38 @@ import { useState } from 'react';
 import { StatusPill } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { ProjectInput, ProjectTag } from '../components/ProjectInput';
-import { Bar, ConfirmDelete, M, Modal, Segmented } from '../components/ui';
+import { Bar, ConfirmDelete, Countdown, M, Modal, Segmented } from '../components/ui';
+import { WEEKDAY_NAMES, formatTime } from '../lib/jalali';
+import { limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
 import { STATUS_LABEL, WorkToggle } from '../components/DeviceStatus';
 import { allProjects, deleteDevice, newId, saveAccount, saveDevice, updateSettings, useDb } from '../lib/store';
 import { ALL_PROJECTS, NO_PROJECT, deviceInProject } from '../lib/projects';
 import { Select } from '../components/Select';
-import type { Device, DeviceKind, DeviceStatus } from '../lib/types';
+import type { Account, Device, DeviceKind, DeviceStatus } from '../lib/types';
 import { useNow } from '../lib/useNow';
 
 const KIND_LABEL: Record<DeviceKind, string> = { laptop: 'لپ‌تاپ', desktop: 'دسکتاپ', server: 'سرور' };
 type StatusFilter = 'all' | DeviceStatus;
+
+/** One limit on a device card: usage, its bar, and how long until it resets. */
+function MiniLimit({ account, kind, now }: { account: Account; kind: LimitKind; now: Date }) {
+  const pct = limitOf(account, kind).usedPct;
+  const at = nextReset(scheduleOf(account, kind), now);
+  const soon = at.getTime() - now.getTime() < 24 * 3600_000;
+  return (
+    <div className="stack-4">
+      <div className="row-between xsmall muted">
+        {kind === 'total' ? <span>کل</span> : <M>Fable</M>}
+        <M className="strong ink">{pct}%</M>
+      </div>
+      <Bar pct={pct} height={6} />
+      <span className={`mini-reset ${soon ? 'soon' : ''}`} title={`ریست ${WEEKDAY_NAMES[at.getDay()]} ${formatTime(at)}`}>
+        <Icon name="refresh" size={11} />
+        <Countdown to={at} now={now} />
+      </span>
+    </div>
+  );
+}
 
 function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose: () => void }) {
   const db = useDb();
@@ -215,20 +237,8 @@ export function Devices() {
                         </div>
                         {a.active && (
                           <div className="grid-2 gap-12">
-                            <div className="stack-4">
-                              <div className="row-between xsmall muted">
-                                <span>کل</span>
-                                <M className="strong ink">{a.total.usedPct}%</M>
-                              </div>
-                              <Bar pct={a.total.usedPct} height={6} />
-                            </div>
-                            <div className="stack-4">
-                              <div className="row-between xsmall muted">
-                                <M>Fable</M>
-                                <M className="strong ink">{a.fable.usedPct}%</M>
-                              </div>
-                              <Bar pct={a.fable.usedPct} height={6} />
-                            </div>
+                            <MiniLimit account={a} kind="total" now={now} />
+                            <MiniLimit account={a} kind="fable" now={now} />
                           </div>
                         )}
                       </div>

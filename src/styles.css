@@ -2684,3 +2684,17 @@ body {
     transform: none;
   }
 }
+
+/* reset countdown under each limit on a device card */
+.mini-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.mini-reset.soon {
+  color: var(--ok-fg);
+  font-weight: 600;
+}
