@@ -2494,3 +2494,118 @@ body {
 .sync-btn.failed {
   color: var(--danger-fg);
 }
+
+/* ── Device working / idle ─────────────────────────────── */
+.device-card {
+  position: relative;
+}
+.device-open {
+  all: unset;
+  cursor: pointer;
+  min-width: 0;
+}
+.device-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.device-open:focus-visible {
+  outline: none;
+}
+.device-open:focus-visible::after {
+  outline: 2px solid var(--total);
+  outline-offset: 2px;
+}
+.work-toggle-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+}
+.work-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 99px;
+  border: 1px solid var(--border-soft);
+  background: var(--glass);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+}
+.work-toggle:hover {
+  color: var(--ink);
+  border-color: var(--faint);
+}
+.work-toggle:active {
+  transform: scale(0.96);
+}
+.work-toggle .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--off-dot);
+  transition: background 0.2s;
+}
+.work-toggle.working {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  border-color: color-mix(in srgb, var(--ok-dot) 35%, transparent);
+}
+.work-toggle.working .dot,
+.work-dot,
+.row-status.working {
+  background: var(--ok-dot);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok-dot) 60%, transparent);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+.work-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+.row-status {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-inline-end: 7px;
+  vertical-align: middle;
+  background: var(--off-dot);
+}
+.device-card.working .device-icon {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.device-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--chip);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .work-toggle.working .dot,
+  .work-dot,
+  .row-status.working {
+    animation: none;
+  }
+}

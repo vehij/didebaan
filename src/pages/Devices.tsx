@@ -2,19 +2,48 @@ import { useState } from 'react';
 import { StatusPill } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { ProjectInput, ProjectTag } from '../components/ProjectInput';
-import { Bar, ConfirmDelete, M, Modal, Segmented } from '../components/ui';
-import { allProjects, deleteDevice, newId, saveAccount, saveDevice, updateSettings, useDb } from '../lib/store';
+import { Ago, Bar, ConfirmDelete, M, Modal, Segmented } from '../components/ui';
+import { allProjects, deleteDevice, newId, saveAccount, saveDevice, setDeviceStatus, updateSettings, useDb } from '../lib/store';
 import { ALL_PROJECTS, NO_PROJECT, deviceInProject } from '../lib/projects';
 import { Select } from '../components/Select';
-import type { Device, DeviceKind } from '../lib/types';
+import type { Device, DeviceKind, DeviceStatus } from '../lib/types';
+import { useNow } from '../lib/useNow';
 
 const KIND_LABEL: Record<DeviceKind, string> = { laptop: 'لپ‌تاپ', desktop: 'دسکتاپ', server: 'سرور' };
+const STATUS_LABEL: Record<DeviceStatus, string> = { working: 'در حال کار', idle: 'بیکار' };
+
+type StatusFilter = 'all' | DeviceStatus;
+
+/** One-click switch between working and idle, with how long the device has been in that state. */
+function WorkToggle({ device, now }: { device: Device; now: Date }) {
+  const working = device.status === 'working';
+  return (
+    <div className="work-toggle-wrap">
+      <button
+        type="button"
+        className={`work-toggle ${device.status}`}
+        aria-pressed={working}
+        aria-label={`وضعیت ${device.name}: ${STATUS_LABEL[device.status]}`}
+        title={working ? 'بزن تا بیکار شود' : 'بزن تا در حال کار شود'}
+        onClick={() => setDeviceStatus(device.id, working ? 'idle' : 'working')}
+      >
+        <span className="dot" />
+        {STATUS_LABEL[device.status]}
+      </button>
+      {device.statusAt && (
+        <span className="xsmall faint">
+          <Ago iso={device.statusAt} now={now} />
+        </span>
+      )}
+    </div>
+  );
+}
 
 function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose: () => void }) {
   const db = useDb();
   const existing = deviceId ? db.devices.find((d) => d.id === deviceId) : undefined;
   const [draft, setDraft] = useState<Device>(
-    () => existing ?? { id: newId(), name: '', kind: 'laptop', os: '', project: '', note: '', createdAt: new Date().toISOString() },
+    () => existing ?? { id: newId(), name: '', kind: 'laptop', os: '', project: '', status: 'idle', statusAt: null, note: '', createdAt: new Date().toISOString() },
   );
   const [isThis, setIsThis] = useState(db.settings.thisDeviceId === draft.id);
   const [error, setError] = useState<string | null>(null);
@@ -71,14 +100,25 @@ function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose:
         </label>
       </div>
       <ProjectInput value={draft.project} onChange={(project) => set({ project })} placeholder="این دستگاه برای کدام پروژه است؟ مثلاً گومان" />
-      <div className="stack-6">
-        <span className="field-label">نوع</span>
-        <Segmented<DeviceKind>
-          label="نوع دستگاه"
-          value={draft.kind}
-          onChange={(kind) => set({ kind })}
-          options={(Object.keys(KIND_LABEL) as DeviceKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))}
-        />
+      <div className="row wrap gap-16 top-align">
+        <div className="stack-6">
+          <span className="field-label">نوع</span>
+          <Segmented<DeviceKind>
+            label="نوع دستگاه"
+            value={draft.kind}
+            onChange={(kind) => set({ kind })}
+            options={(Object.keys(KIND_LABEL) as DeviceKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+          />
+        </div>
+        <div className="stack-6">
+          <span className="field-label">وضعیت</span>
+          <Segmented<DeviceStatus>
+            label="وضعیت دستگاه"
+            value={draft.status}
+            onChange={(status) => set({ status })}
+            options={(Object.keys(STATUS_LABEL) as DeviceStatus[]).map((k) => ({ value: k, label: STATUS_LABEL[k] }))}
+          />
+        </div>
       </div>
       <label className="check-row">
         <input type="checkbox" checked={isThis} onChange={(e) => setIsThis(e.target.checked)} />
@@ -94,10 +134,14 @@ function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose:
 
 export function Devices() {
   const db = useDb();
+  const now = useNow();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const logins = db.accounts.reduce((n, a) => n + a.deviceIds.length, 0);
   const [project, setProject] = useState(ALL_PROJECTS);
-  const shown = db.devices.filter((d) => deviceInProject(d, project, db.accounts));
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const inScope = db.devices.filter((d) => deviceInProject(d, project, db.accounts));
+  const shown = inScope.filter((d) => status === 'all' || d.status === status);
+  const working = inScope.filter((d) => d.status === 'working').length;
   const projectOptions = [
     { value: ALL_PROJECTS, label: 'همه‌ی پروژه‌ها', hint: <M>{db.devices.length}</M> },
     ...allProjects(db).map((p) => ({ value: p, label: p, hint: <M>{db.devices.filter((d) => deviceInProject(d, p, db.accounts)).length}</M> })),
@@ -117,10 +161,22 @@ export function Devices() {
         <div className="stack-2">
           <h1>دستگاه‌ها</h1>
           <div className="muted small">
-            <M>{db.devices.length}</M> دستگاه · <M>{logins}</M> لاگین
+            <M>{db.devices.length}</M> دستگاه · <M>{db.devices.filter((d) => d.status === 'working').length}</M> در حال کار · <M>{logins}</M> لاگین
           </div>
         </div>
         <div className="row wrap gap-10">
+          {db.devices.length > 0 && (
+            <Segmented<StatusFilter>
+              label="فیلتر وضعیت"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: 'all', label: <>همه <M className="count">{inScope.length}</M></> },
+                { value: 'working', label: <>در حال کار <M className="count">{working}</M></> },
+                { value: 'idle', label: <>بیکار <M className="count">{inScope.length - working}</M></> },
+              ]}
+            />
+          )}
           {projectOptions.length > 1 && <Select<string> label="فیلتر پروژه" value={project} onChange={setProject} options={projectOptions} className="project-filter" />}
           <button type="button" className="btn primary" onClick={() => setEditing('new')}>
             <Icon name="plus" size={17} stroke={2} />
@@ -142,18 +198,21 @@ export function Devices() {
       ) : (
         <>
           <div className="cards">
-            {shown.length === 0 && <p className="muted">دستگاهی در این پروژه نیست.</p>}
+            {shown.length === 0 && <p className="muted">دستگاهی با این فیلتر پیدا نشد.</p>}
             {shown.map((d) => {
               const accounts = db.accounts.filter((a) => a.deviceIds.includes(d.id));
               return (
-                <button key={d.id} type="button" className="card device-card" onClick={() => setEditing(d.id)} aria-label={`ویرایش ${d.name}`}>
-                  <div className="row gap-14">
+                <div key={d.id} className={`card device-card ${d.status}`}>
+                  <div className="row top-align gap-14">
                     <div className="device-icon">
                       <Icon name={d.kind} size={24} stroke={1.6} />
                     </div>
                     <div className="stack-0 min0 grow">
                       <div className="row wrap gap-8">
-                        <M className="device-name">{d.name}</M>
+                        {/* Stretched over the whole card, so clicking anywhere opens the editor. */}
+                        <button type="button" className="device-open" onClick={() => setEditing(d.id)} aria-label={`ویرایش ${d.name}`}>
+                          <M className="device-name">{d.name}</M>
+                        </button>
                         {db.settings.thisDeviceId === d.id && <span className="tag info">این دستگاه</span>}
                       </div>
                       <ProjectTag project={d.project} />
@@ -167,7 +226,9 @@ export function Devices() {
                         )}
                       </span>
                     </div>
+                    <WorkToggle device={d} now={now} />
                   </div>
+                  {d.note && <p className="device-note">{d.note}</p>}
                   <div className="stack-10">
                     <span className="muted xsmall">
                       اکانت‌های لاگین‌شده (<M>{accounts.length}</M>)
@@ -199,7 +260,7 @@ export function Devices() {
                       </div>
                     ))}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -226,6 +287,7 @@ export function Devices() {
                     {shown.map((d) => (
                       <tr key={d.id}>
                         <th scope="row">
+                          <span className={`row-status ${d.status}`} title={STATUS_LABEL[d.status]} />
                           <M>{d.name}</M>
                           {d.project && <span className="muted xsmall"> · {d.project}</span>}
                         </th>

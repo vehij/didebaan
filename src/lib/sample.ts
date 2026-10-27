@@ -10,11 +10,21 @@ export function sampleDatabase(newId: () => string, now = new Date()): Database 
     d.setDate(d.getDate() + n);
     return ymd(d);
   };
-  const device = (name: string, kind: Device['kind'], os: string, project = ''): Device => ({ id: newId(), name, kind, os, project, note: '', createdAt: iso });
-  const mbp = device('MacBook Pro 16', 'laptop', 'macOS 26', 'پروژه میرزا');
+  const device = (name: string, kind: Device['kind'], os: string, project = '', status: Device['status'] = 'idle', note = ''): Device => ({
+    id: newId(),
+    name,
+    kind,
+    os,
+    project,
+    status,
+    statusAt: status === 'working' ? iso : null,
+    note,
+    createdAt: iso,
+  });
+  const mbp = device('MacBook Pro 16', 'laptop', 'macOS 26', 'پروژه میرزا', 'working', 'لپ‌تاپ اصلی؛ همیشه همراه');
   const mini = device('Mac mini M4', 'desktop', 'macOS 26');
   const air = device('MacBook Air', 'laptop', 'macOS 15');
-  const imac = device('iMac 24', 'desktop', 'macOS 26', 'طراحی سایت');
+  const imac = device('iMac 24', 'desktop', 'macOS 26', 'طراحی سایت', 'working');
   const vps = device('Ubuntu VPS', 'server', 'Ubuntu 24.04');
 
   const account = (

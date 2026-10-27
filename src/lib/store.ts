@@ -72,7 +72,7 @@ export function normalize(raw: unknown): Database {
   const r = raw as Partial<Database>;
   return {
     version: 1,
-    devices: Array.isArray(r.devices) ? r.devices.map((d) => ({ ...d, project: d.project ?? '' })) : [],
+    devices: Array.isArray(r.devices) ? r.devices.map((d) => ({ ...d, project: d.project ?? '', status: d.status === 'working' ? 'working' : 'idle', statusAt: d.statusAt ?? null })) : [],
     accounts: Array.isArray(r.accounts) ? r.accounts.map((a) => ({ ...a, project: a.project ?? '' })) : [],
     usage: Array.isArray(r.usage) ? r.usage : [],
     settings: { ...base.settings, ...(r.settings ?? {}), notify: { ...base.settings.notify, ...(r.settings?.notify ?? {}) }, sync: { ...base.settings.sync, ...(r.settings?.sync ?? {}) } },
@@ -159,8 +159,15 @@ export function deleteAccount(id: string) {
 }
 
 export function saveDevice(device: Device) {
-  const exists = db.devices.some((d) => d.id === device.id);
+  const prev = db.devices.find((d) => d.id === device.id);
+  const exists = !!prev;
+  if (prev ? prev.status !== device.status : device.status === 'working') device = { ...device, statusAt: new Date().toISOString() };
   commit({ ...db, devices: exists ? db.devices.map((d) => (d.id === device.id ? device : d)) : [...db.devices, device] });
+}
+
+export function setDeviceStatus(id: string, status: Device['status']) {
+  const d = db.devices.find((x) => x.id === id);
+  if (d && d.status !== status) saveDevice({ ...d, status });
 }
 
 export function deleteDevice(id: string) {

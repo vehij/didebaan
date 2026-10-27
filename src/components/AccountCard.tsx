@@ -178,9 +178,10 @@ export function AccountCard({
             .map((id) => devices.get(id))
             .filter((d): d is Device => !!d)
             .map((d) => (
-              <span key={d.id} className="chip">
+              <span key={d.id} className="chip" title={d.status === 'working' ? 'در حال کار' : 'بیکار'}>
                 <Icon name={d.kind} size={13} />
                 <M>{d.name}</M>
+                {d.status === 'working' && <span className="work-dot" aria-label="در حال کار" />}
               </span>
             ))}
         </div>

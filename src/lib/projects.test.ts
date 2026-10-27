@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_PROJECTS, NO_PROJECT, deviceInProject, inProject } from './projects';
 import type { Account, Device } from './types';
 
-const device = (id: string, project: string): Device => ({ id, name: id, kind: 'laptop', os: '', project, note: '', createdAt: '' });
+const device = (id: string, project: string): Device => ({ id, name: id, kind: 'laptop', os: '', project, status: 'idle', statusAt: null, note: '', createdAt: '' });
 const account = (project: string, deviceIds: string[]) => ({ project, deviceIds }) as unknown as Account;
 
 describe('project filter', () => {

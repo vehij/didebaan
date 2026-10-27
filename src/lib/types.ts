@@ -2,6 +2,8 @@ export type Plan = 'Pro' | 'Max 5x' | 'Max 20x' | 'Team' | 'Enterprise';
 export const PLANS: Plan[] = ['Pro', 'Max 5x', 'Max 20x', 'Team', 'Enterprise'];
 
 export type DeviceKind = 'laptop' | 'desktop' | 'server';
+/** Whether someone is currently working on the device, set by hand. */
+export type DeviceStatus = 'working' | 'idle';
 
 export interface Device {
   id: string;
@@ -10,6 +12,9 @@ export interface Device {
   os: string;
   /** Free-text project this device is used for; shares suggestions with account projects. */
   project: string;
+  status: DeviceStatus;
+  /** When `status` last changed; null if never set. */
+  statusAt: string | null;
   note: string;
   createdAt: string;
 }
