@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyRemoteReports, type RemoteReport } from './remote';
+import { applyRemoteReports, sessionAt, type RemoteReport } from './remote';
 import { emptyDatabase, type Account } from './types';
 
 const account = (over: Partial<Account> = {}): Account => ({
@@ -77,5 +77,28 @@ describe('applyRemoteReports', () => {
   it('lists reports with no matching account', () => {
     const { unmatched } = applyRemoteReports({ ...emptyDatabase(), accounts: [account()] }, [report({ email: 'other@example.com' })], id);
     expect(unmatched.map((r) => r.email)).toEqual(['other@example.com']);
+  });
+});
+
+describe('sessionAt', () => {
+  const at = (iso: string) => new Date(iso);
+  const withSession = (session: RemoteReport['session']) =>
+    applyRemoteReports({ ...emptyDatabase(), accounts: [account()] }, [report({ session })], id).db.accounts[0].remote;
+
+  it('is null for accounts without a session limit', () => {
+    expect(sessionAt(withSession(null), at('2026-10-26T10:30:00.000Z'))).toBeNull();
+    expect(sessionAt(undefined, at('2026-10-26T10:30:00.000Z'))).toBeNull();
+  });
+
+  it('shows a running session with how much of its five hours has passed', () => {
+    const s = sessionAt(withSession({ pct: 41.4, resetsAt: '2026-10-26T13:00:00.000Z' }), at('2026-10-26T10:30:00.000Z'))!;
+    expect(s.pct).toBe(41);
+    expect(s.elapsed).toBe(0.5);
+    expect(s.resetsAt?.toISOString()).toBe('2026-10-26T13:00:00.000Z');
+  });
+
+  it('is empty again once the session has reset', () => {
+    const remote = withSession({ pct: 96, resetsAt: '2026-10-26T13:00:00.000Z' });
+    expect(sessionAt(remote, at('2026-10-26T13:00:01.000Z'))).toEqual({ pct: 0, resetsAt: null, elapsed: 0 });
   });
 });

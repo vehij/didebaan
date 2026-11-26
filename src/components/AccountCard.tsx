@@ -3,20 +3,19 @@ import { formatDate, type CalendarKind } from '../lib/jalali';
 import { daysUntil, limitOf, scheduleOf, type LimitKind } from '../lib/time';
 import type { Account, Device } from '../lib/types';
 import { Icon } from './Icon';
-import { ProjectTag } from './ProjectInput';
 import { Ago, M } from './ui';
-import { UsageMeter, toneStyle } from './UsageMeter';
+import { sessionAt } from '../lib/remote';
+import { SessionMeter, UsageMeter, toneStyle } from './UsageMeter';
 
-const LIMITS: { kind: LimitKind; label: ReactNode; icon: ReactNode }[] = [
-  { kind: 'total', label: 'لیمیت هفتگی کل', icon: <Icon name="layers" size={14} /> },
+const LIMITS: { kind: LimitKind; label: ReactNode }[] = [
+  { kind: 'total', label: 'هفتگی کل' },
   {
     kind: 'fable',
     label: (
       <>
-        لیمیت هفتگی <M>Fable</M>
+        هفتگی <M>Fable</M>
       </>
     ),
-    icon: <Icon name="sparkle" size={14} />,
   },
 ];
 
@@ -78,120 +77,110 @@ export function AccountCard({
   account,
   devices,
   now,
-  warnAt,
   calendar,
   onEdit,
 }: {
   account: Account;
   devices: Map<string, Device>;
   now: Date;
-  warnAt: number;
   calendar: CalendarKind;
   onEdit: () => void;
 }) {
+  const remote = account.remote;
+  const session = account.active ? sessionAt(remote, now) : null;
+  const products = account.active ? (remote?.products ?? []).filter((p) => p.pct > 0) : [];
+  const onDevices = account.deviceIds.map((id) => devices.get(id)).filter((d): d is Device => !!d);
+  const fullest = Math.max(account.total.usedPct, account.fable.usedPct, session?.pct ?? 0);
   return (
-    <button type="button" className="card account-card" onClick={onEdit} aria-label={`ویرایش ${account.label}`}>
-      <div className="row-between top">
-        <div className="row gap-12 min0 top-align">
-          <Monogram label={account.label} pct={account.active ? Math.max(account.total.usedPct, account.fable.usedPct) : null} />
-          <div className="stack-2 min0">
-          <div className="row wrap gap-8">
-            <span className="account-name">{account.label}</span>
+    <button type="button" className={`card account-card ${account.active ? '' : 'inactive'}`} onClick={onEdit} aria-label={`ویرایش ${account.label}`}>
+      <div className="account-head">
+        <Monogram label={account.label} pct={account.active ? fullest : null} />
+        <div className="stack-0 min0 grow">
+          <div className="row gap-6 min0">
+            <span className="account-name ellipsis">{account.label}</span>
             <M className="plan">{account.plan}</M>
+            {!account.active && <span className="tag">غیرفعال</span>}
           </div>
-          {account.email && (
-            <div className="muted small">
-              <M>{account.email}</M>
-            </div>
-          )}
-          <ProjectTag project={account.project} />
+          <div className="account-sub">
+            {account.email && <M className="ellipsis">{account.email}</M>}
+            {account.project && (
+              <span className="account-project">
+                <Icon name="folder" size={11} />
+                {account.project}
+              </span>
+            )}
           </div>
         </div>
-        <StatusPill active={account.active} />
       </div>
 
-      {account.active ? (
-        <div className="stack-16">
-          {LIMITS.map(({ kind, label, icon }) => (
+      {account.active && (
+        <div className="meters">
+          {session && <SessionMeter session={session} now={now} />}
+          {LIMITS.map(({ kind, label }) => (
             <UsageMeter
               key={kind}
               label={label}
-              icon={icon}
               pct={limitOf(account, kind).usedPct}
               schedule={scheduleOf(account, kind)}
               now={now}
-              warnAt={warnAt}
               note={
-                account.remote && account.remote[kind === 'total' ? 'hasWeekly' : 'hasFable'] === false ? (
-                  <div className="xsmall warn-text">این عدد از افزونه نیامد؛ صفحه‌ی Usage را در Chrome همان لپ‌تاپ باز کن یا دستی واردش کن.</div>
+                remote && remote[kind === 'total' ? 'hasWeekly' : 'hasFable'] === false ? (
+                  <div className="meter-pace" title="صفحه‌ی Usage را در Chrome همان لپ‌تاپ باز کن یا عدد را دستی وارد کن.">
+                    این عدد از افزونه نیامد
+                  </div>
                 ) : undefined
               }
             />
           ))}
         </div>
-      ) : (
-        <div className="inactive-box">
-          <strong>این اکانت غیرفعال است</strong>
-          <span>مصرف و زمان ریستش دنبال نمی‌شود.</span>
-        </div>
       )}
 
-      {account.remote && (
-        <div className="remote">
-          {account.active && account.remote.products.some((p) => p.pct > 0) && (
-            <div className="stack-6">
-              <div className="products-bar" role="img" aria-label={account.remote.products.map((p) => `${p.name} ${p.pct}%`).join('، ')}>
-                {account.remote.products
-                  .filter((p) => p.pct > 0)
-                  .map((p) => (
-                    <span key={p.name} style={{ flexGrow: p.pct, background: productColor(p.name) }} />
-                  ))}
-              </div>
-              <div className="row wrap gap-10 xsmall muted">
-                {account.remote.products
-                  .filter((p) => p.pct > 0)
-                  .map((p) => (
-                    <span key={p.name} className="row gap-6">
-                      <span className="swatch" style={{ background: productColor(p.name) }} />
-                      <M>{p.name}</M> <M className="ink">{p.pct}%</M>
-                    </span>
-                  ))}
-              </div>
-            </div>
-          )}
-          <span className={`xsmall ${now.getTime() - Date.parse(account.remote.capturedAt) > STALE_MS ? 'warn-text' : 'muted'}`}>
-            <Icon name="refresh" size={12} /> خودکار · <Ago iso={account.remote.capturedAt} now={now} />
-            {account.remote.device && (
-              <>
-                {' '}
-                از <M>{account.remote.device}</M>
-              </>
-            )}
-          </span>
+      {products.length > 0 && (
+        <div className="products" title={products.map((p) => `${p.name} ${p.pct}%`).join(' · ')}>
+          <div className="products-bar" role="img" aria-label={products.map((p) => `${p.name} ${p.pct}%`).join('، ')}>
+            {products.map((p) => (
+              <span key={p.name} style={{ flexGrow: p.pct, background: productColor(p.name) }} />
+            ))}
+          </div>
+          <div className="products-legend">
+            {products.map((p) => (
+              <span key={p.name}>
+                <span className="swatch" style={{ background: productColor(p.name) }} />
+                <M>{p.name}</M> <M className="ink">{p.pct}%</M>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
       <div className="card-foot">
-        <div className="row wrap gap-6">
-          {account.deviceIds.length === 0 && <span className="muted xsmall">روی هیچ دستگاهی ثبت نشده</span>}
-          {account.deviceIds
-            .map((id) => devices.get(id))
-            .filter((d): d is Device => !!d)
-            .map((d) => (
+        {onDevices.length > 0 && (
+          <div className="row wrap gap-4">
+            {onDevices.map((d) => (
               <span key={d.id} className="chip" title={d.status === 'working' ? 'در حال کار' : 'بیکار'}>
-                <Icon name={d.kind} size={13} />
+                <Icon name={d.kind} size={12} />
                 <M>{d.name}</M>
                 {d.status === 'working' && <span className="work-dot" aria-label="در حال کار" />}
               </span>
             ))}
-        </div>
-        <div className="row gap-8 muted xsmall">
-          {account.renewalDate && (
-            <span>
-              تمدید <M>{formatDate(account.renewalDate, calendar)}</M>
+          </div>
+        )}
+        <div className="card-meta">
+          {remote ? (
+            <span
+              className={`synced ${now.getTime() - Date.parse(remote.capturedAt) > STALE_MS ? 'warn-text' : ''}`}
+              title={`آخرین عدد خودکار${remote.device ? ` از ${remote.device}` : ''}`}
+            >
+              <Icon name="refresh" size={11} />
+              <Ago iso={remote.capturedAt} now={now} />
             </span>
+          ) : (
+            <span className="synced">دستی</span>
           )}
-          <RenewalPill date={account.renewalDate} now={now} ending={account.remote?.autoRenew === false} />
+          <span className="row gap-6" title={account.renewalDate ? `تمدید ${formatDate(account.renewalDate, calendar)}` : undefined}>
+            {account.renewalDate && <M>{formatDate(account.renewalDate, calendar)}</M>}
+            <RenewalPill date={account.renewalDate} now={now} ending={remote?.autoRenew === false} />
+          </span>
         </div>
       </div>
     </button>

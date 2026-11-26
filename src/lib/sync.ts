@@ -51,6 +51,24 @@ export function pairingCode(s: Settings): string | null {
   return `DBN1.${b64url(new TextEncoder().encode(json))}`;
 }
 
+const ignoredOf = (s: Settings) => s.sync.ignored ?? [];
+
+/** Reports with no account, minus the emails the user chose not to be offered. */
+export function visibleUnmatched(unmatched: RemoteReport[], s: Settings): RemoteReport[] {
+  const ignored = new Set(ignoredOf(s));
+  return unmatched.filter((r) => !ignored.has(r.email.toLowerCase()));
+}
+
+/** Stops offering this email as a new account. The extension may keep reporting it; it just stays hidden. */
+export function ignoreEmail(email: string) {
+  const { sync } = getDb().settings;
+  updateSettings({ sync: { ...sync, ignored: [...new Set([...ignoredOf(getDb().settings), email.toLowerCase()])] } });
+}
+
+export function restoreIgnored() {
+  updateSettings({ sync: { ...getDb().settings.sync, ignored: [] } });
+}
+
 export async function syncNow(): Promise<void> {
   const { settings } = getDb();
   if (!settings.sync.key || state.busy) return;

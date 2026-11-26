@@ -10,17 +10,24 @@ const ago = (iso) => {
 const DAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
 const pad = (n) => String(n).padStart(2, '0');
 
-function resetText(iso) {
-  if (!iso) return '';
+function resetText(iso, fallback = '') {
+  if (!iso) return fallback;
   const d = new Date(iso);
-  return `ریست ${DAYS[d.getDay()]} <span class="mono">${pad(d.getHours())}:${pad(d.getMinutes())}</span>`;
+  const time = `<span class="mono">${pad(d.getHours())}:${pad(d.getMinutes())}</span>`;
+  // A reset within the day (the 5-hour session) needs no weekday.
+  return d - Date.now() < 20 * 60 * 60 * 1000 ? `ریست ${time}` : `ریست ${DAYS[d.getDay()]} ${time}`;
 }
 
-function bar(label, reading, color) {
+function bar(label, reading, color, noReset = '') {
   if (!reading) return '';
-  return `<div class="line"><span>${label}</span><span class="mono">${reading.pct}%</span></div>
-    <div class="bar"><span style="width:${Math.min(100, reading.pct)}%;background:${color}"></span></div>
-    <div class="line muted">${resetText(reading.resetsAt)}</div>`;
+  return `<div class="line"><span>${label}</span><span class="muted reset">${resetText(reading.resetsAt, noReset)}</span><span class="mono pct">${reading.pct}%</span></div>
+    <div class="bar"><span style="width:${Math.min(100, reading.pct)}%;background:${color}"></span></div>`;
+}
+
+/** A session whose reset time has passed is empty again. */
+function liveSession(session) {
+  if (!session) return null;
+  return session.resetsAt && Date.parse(session.resetsAt) <= Date.now() ? { pct: 0, resetsAt: null } : session;
 }
 
 function renewalLine(renewal) {
@@ -48,8 +55,9 @@ async function render() {
     .map(
       (r) => `<div class="card">
         <div class="who"><span class="mono">${escapeHtml(r.email)}</span><span class="muted">${escapeHtml(r.plan ?? '')}</span></div>
-        ${bar('لیمیت هفتگی کل', r.weekly, 'var(--total)')}
-        ${bar('Fable', r.fable, 'var(--fable)')}
+        ${bar('سشن ۵ ساعته', liveSession(r.session), 'var(--session)', 'شروع نشده')}
+        ${bar('هفتگی کل', r.weekly, 'var(--total)')}
+        ${bar('هفتگی Fable', r.fable, 'var(--fable)')}
         ${renewalLine(r.renewal)}
       </div>`,
     )

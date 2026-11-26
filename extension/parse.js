@@ -72,10 +72,12 @@ function modelLimitOf(limits) {
   return pick ? readingOf(pick) : null;
 }
 
-/** Reads the weekly, Fable and per-product numbers out of an organization usage response. */
+/** Reads the 5-hour session, weekly, Fable and per-product numbers out of an organization usage response. */
 export function parseUsage(usage) {
-  if (!isObj(usage)) return { weekly: null, fable: null, products: [] };
+  if (!isObj(usage)) return { session: null, weekly: null, fable: null, products: [] };
   const weekly = readingOf(usage.seven_day ?? usage.weekly ?? usage.week);
+  // Accounts without a session limit have no (or a null) five_hour window.
+  const session = readingOf(usage.five_hour ?? usage.current_session ?? usage.session);
   let fable = modelLimitOf(usage.limits);
   for (const [k, v] of Object.entries(usage)) {
     if (!fable && /fable/i.test(k)) fable = readingOf(v);
@@ -89,7 +91,7 @@ export function parseUsage(usage) {
       }
     }
   }
-  return { weekly, fable, products: productsOf(usage) };
+  return { session, weekly, fable, products: productsOf(usage) };
 }
 
 export function planOf(org) {
@@ -117,8 +119,16 @@ export function skeleton(value, depth = 0) {
 
 const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-/** "Thursday 9:30 PM" or "at 1:20 PM" → the next such moment after `now`, as ISO. */
+/** "Thursday 9:30 PM", "at 1:20 PM" or "in 3 hr 12 min" → the next such moment after `now`, as ISO. */
 export function resetTextToIso(text, now = new Date()) {
+  const rel = /\bin\s+(?:(\d+)\s*d(?:ays?)?\s*)?(?:(\d+)\s*h(?:(?:ou)?rs?)?\s*)?(?:(\d+)\s*m(?:in(?:ute)?s?)?)?/i.exec(text);
+  if (rel && (rel[1] || rel[2] || rel[3])) {
+    const minutes = Number(rel[1] ?? 0) * 1440 + Number(rel[2] ?? 0) * 60 + Number(rel[3] ?? 0);
+    const at = new Date(now);
+    at.setSeconds(0, 0);
+    at.setMinutes(at.getMinutes() + minutes);
+    return at.toISOString();
+  }
   const m = /(?:(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s+)?(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?/i.exec(text);
   if (!m) return null;
   let h = Number(m[2]) % 12;
@@ -142,12 +152,15 @@ export function parseUsagePage(lines, now = new Date()) {
   const clean = lines.map((l) => l.trim()).filter(Boolean);
   // Titles may share a line with their subtitle ("Fable Up to 50% of your weekly limit"),
   // and "This week" must not match "This week's usage by product".
+  const TITLES = [/^current session\b/i, /^this week(?![’']s)\b/i, /^fable\b/i, /usage by product/i];
   const block = (title) => {
     const i = clean.findIndex((l) => title.test(l));
     if (i < 0) return null;
     let pct = null;
     let resetsAt = null;
-    for (const l of clean.slice(i, i + 6)) {
+    // A block ends where the next one starts, so a block without a number never borrows its neighbour's.
+    const next = clean.findIndex((l, j) => j > i && TITLES.some((t) => t !== title && t.test(l)));
+    for (const l of clean.slice(i, Math.min(i + 6, next < 0 ? Infinity : next))) {
       const p = /(\d+(?:\.\d+)?)%\s*used/i.exec(l);
       if (p && pct === null) pct = Number(p[1]);
       if (/^resets\s/i.test(l) && !resetsAt) resetsAt = resetTextToIso(l, now);
@@ -163,7 +176,7 @@ export function parseUsagePage(lines, now = new Date()) {
       products.push({ name: prettyProduct(clean[i]), pct: Math.round(Number(p[1])) });
     }
   }
-  return { weekly: block(/^this week(?![’']s)\b/i), fable: block(/^fable\b/i), products };
+  return { session: block(TITLES[0]), weekly: block(TITLES[1]), fable: block(TITLES[2]), products };
 }
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];

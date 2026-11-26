@@ -4,6 +4,8 @@ export interface UsageReport {
   orgId: string | null;
   orgName: string | null;
   plan: string | null;
+  /** The 5-hour session limit; null for accounts that have none (or an older extension). */
+  session: LimitReading | null;
   weekly: LimitReading | null;
   fable: LimitReading | null;
   products: { name: string; pct: number }[];
@@ -69,6 +71,7 @@ export function parseReport(body: unknown): UsageReport | null {
     orgId: str(b.orgId, 80),
     orgName: str(b.orgName, 80),
     plan: str(b.plan, 40),
+    session: limit(b.session),
     weekly,
     fable,
     products,

@@ -2,76 +2,18 @@ import { useMemo, useState } from 'react';
 import { AccountCard } from '../components/AccountCard';
 import { Icon } from '../components/Icon';
 import { Ago, Countdown, M, Segmented } from '../components/ui';
-import { WorkToggle } from '../components/DeviceStatus';
-import { ProjectTag } from '../components/ProjectInput';
-import { toneStyle } from '../components/UsageMeter';
 import { syncNow, useSyncState } from '../lib/sync';
 import { WEEKDAY_NAMES, formatDate, formatTime, ymd } from '../lib/jalali';
 import { allProjects, replaceDatabase, newId, useDb } from '../lib/store';
 import { ALL_PROJECTS, NO_PROJECT, inProject } from '../lib/projects';
 import { Select } from '../components/Select';
 import { sampleDatabase } from '../lib/sample';
-import { bestAccount, daysUntil, limitOf, nextReset, scheduleOf, type LimitKind } from '../lib/time';
-import type { Account, Database } from '../lib/types';
+import { daysUntil, nextReset, scheduleOf } from '../lib/time';
+import type { Account } from '../lib/types';
 import { useNow } from '../lib/useNow';
-import { usageColor } from '../lib/tone';
 
 type Filter = 'all' | 'active' | 'inactive';
 type Sort = 'reset' | 'free' | 'renew' | 'name';
-
-const RING = 2 * Math.PI * 26;
-
-function Recommendation({ account, kind }: { account: Account | null; kind: LimitKind }) {
-  const label = kind === 'total' ? 'برای کار عمومی' : (<>برای کار با <M>Fable</M></>);
-  if (!account) {
-    return (
-      <div className="card rec">
-        <div className="stack-4 grow">
-          <span className="muted small">{label}</span>
-          <span className="muted">اکانت فعالی وجود ندارد</span>
-        </div>
-      </div>
-    );
-  }
-  const free = 100 - limitOf(account, kind).usedPct;
-  const s = scheduleOf(account, kind);
-  return (
-    <div className="card rec">
-      <div className="stack-4 grow min0">
-        <span className="muted small">{label}</span>
-        <span className="row wrap gap-8">
-          <span className="rec-name">{account.label}</span>
-          {account.project && (
-            <span className="project-tag">
-              <Icon name="folder" size={13} />
-              {account.project}
-            </span>
-          )}
-        </span>
-        <span className="small ink-2">
-          <M>{free}%</M> آزاد · ریست {WEEKDAY_NAMES[s.weekday]} <M>{s.time}</M>
-        </span>
-      </div>
-      <svg role="img" aria-label={`${free} درصد آزاد`} width="64" height="64" viewBox="0 0 64 64" className="ring">
-        <circle cx="32" cy="32" r="26" fill="none" stroke="var(--track)" strokeWidth="7" />
-        <circle
-          cx="32"
-          cy="32"
-          r="26"
-          fill="none"
-          stroke={usageColor(account ? limitOf(account, kind).usedPct : 0)}
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={`${(RING * free) / 100} ${RING}`}
-          transform="rotate(-90 32 32)"
-        />
-        <text x="32" y="37" textAnchor="middle" className="ring-text">
-          {free}
-        </text>
-      </svg>
-    </div>
-  );
-}
 
 /** Pulls the latest extension reports now; shows how fresh the last pull is. */
 function SyncButton({ now }: { now: Date }) {
@@ -85,7 +27,7 @@ function SyncButton({ now }: { now: Date }) {
       title={sync.error ? `آخرین تلاش ناموفق بود: ${sync.error}` : 'گرفتن آخرین عددها از افزونه‌ها'}
     >
       <span className={sync.busy ? 'spin' : undefined}>
-        <Icon name="refresh" size={15} />
+        <Icon name="refresh" size={13} />
       </span>
       {sync.busy ? (
         'در حال همگام‌سازی…'
@@ -99,70 +41,6 @@ function SyncButton({ now }: { now: Date }) {
         'همگام‌سازی'
       )}
     </button>
-  );
-}
-
-/** Devices someone is working on right now, with how much room each logged-in account has left. */
-function WorkingDevices({ db, now, onEdit }: { db: Database; now: Date; onEdit: (id: string) => void }) {
-  const working = db.devices.filter((d) => d.status === 'working');
-  return (
-    <section className="stack-12">
-      <div className="row gap-8 baseline">
-        <h2 className="section-title">دستگاه‌های در حال کار</h2>
-        <span className="muted small">
-          <M>{working.length}</M> از <M>{db.devices.length}</M> دستگاه
-        </span>
-      </div>
-      {working.length === 0 ? (
-        <p className="muted small">الان هیچ دستگاهی در حال کار نیست. وضعیت دستگاه‌ها را از صفحه‌ی دستگاه‌ها مشخص کن.</p>
-      ) : (
-        <div className="working-devices">
-          {working.map((d) => {
-            const accounts = db.accounts.filter((a) => a.deviceIds.includes(d.id));
-            return (
-              <div key={d.id} className="card working-device">
-                <div className="row top-align gap-12">
-                  <div className="device-icon sm">
-                    <Icon name={d.kind} size={20} stroke={1.6} />
-                  </div>
-                  <div className="stack-4 min0 grow">
-                    <div className="row wrap gap-8">
-                      <M className="device-name">{d.name}</M>
-                      {db.settings.thisDeviceId === d.id && <span className="tag info">این دستگاه</span>}
-                    </div>
-                    <ProjectTag project={d.project} />
-                  </div>
-                  <WorkToggle device={d} now={now} />
-                </div>
-                {d.note && <p className="device-note clamp-2">{d.note}</p>}
-                <div className="row wrap gap-6">
-                  {accounts.length === 0 && <span className="muted xsmall">اکانتی رویش لاگین نیست</span>}
-                  {accounts.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      className={`dev-account ${a.active ? '' : 'inactive'}`}
-                      style={a.active ? toneStyle(a.total.usedPct) : undefined}
-                      onClick={() => onEdit(a.id)}
-                      title={a.active ? `کل ${a.total.usedPct}% · Fable ${a.fable.usedPct}%` : 'غیرفعال'}
-                    >
-                      {a.label}
-                      {a.active ? (
-                        <span className="dev-account-free">
-                          <M>{100 - a.total.usedPct}%</M> آزاد
-                        </span>
-                      ) : (
-                        <span className="dev-account-free">غیرفعال</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -306,16 +184,6 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
             </div>
           </section>
 
-          <section className="stack-12">
-            <h2 className="section-title">پیشنهاد برای همین الان</h2>
-            <div className="recs">
-              <Recommendation account={bestAccount(db.accounts, 'total', now)} kind="total" />
-              <Recommendation account={bestAccount(db.accounts, 'fable', now)} kind="fable" />
-            </div>
-          </section>
-
-          {db.devices.length > 0 && <WorkingDevices db={db} now={now} onEdit={onEdit} />}
-
           <section className="stack-14">
             <div className="row-between wrap gap-12">
               <div className="row wrap gap-12">
@@ -357,7 +225,7 @@ export function Dashboard({ onEdit, onNew }: { onEdit: (id: string) => void; onN
             ) : (
               <div className="cards">
                 {list.map((a) => (
-                  <AccountCard key={a.id} account={a} devices={devices} now={now} warnAt={db.settings.warnAt} calendar={db.settings.calendar} onEdit={() => onEdit(a.id)} />
+                  <AccountCard key={a.id} account={a} devices={devices} now={now} calendar={db.settings.calendar} onEdit={() => onEdit(a.id)} />
                 ))}
               </div>
             )}

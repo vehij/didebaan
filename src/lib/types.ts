@@ -45,6 +45,8 @@ export interface RemoteInfo {
   /** Which limits the last report carried; a missing one keeps its previous value. */
   hasWeekly?: boolean;
   hasFable?: boolean;
+  /** The 5-hour session limit, for accounts that have one. `resetsAt` is null while no session is running. */
+  session?: { pct: number; resetsAt: string | null } | null;
 }
 
 export interface Account {
@@ -96,8 +98,11 @@ export interface Settings {
   calendar: 'jalali' | 'gregorian';
   thisDeviceId: string | null;
   notify: NotifySettings;
-  /** Sync server the browser extensions report to (empty = the project's default); `key` is null until sync is turned on. */
-  sync: { url: string; key: string | null };
+  /**
+   * Sync server the browser extensions report to (empty = the project's default); `key` is null until sync is turned on.
+   * `ignored` lists emails the extensions report but the user does not want offered as new accounts.
+   */
+  sync: { url: string; key: string | null; ignored?: string[] };
 }
 
 export interface Database {

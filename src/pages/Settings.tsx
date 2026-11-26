@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { ymd } from '../lib/jalali';
 import { sendNotification } from '../lib/notify';
 import { checkForUpdate, installUpdate, useUpdateState } from '../lib/updater';
-import { disableSync, enableSync, pairingCode, syncNow, useSyncState } from '../lib/sync';
+import { disableSync, enableSync, ignoreEmail, pairingCode, restoreIgnored, syncNow, useSyncState, visibleUnmatched } from '../lib/sync';
 import { blankAccount } from '../components/AccountEditor';
 import { Ago } from '../components/ui';
 import { getDb, normalize, replaceDatabase, saveAccount, updateNotifySettings, updateSettings, useDb } from '../lib/store';
@@ -25,6 +25,8 @@ export function Settings() {
   const sync = useSyncState();
   const now = useNow();
   const code = pairingCode(db.settings);
+  const unmatched = visibleUnmatched(sync.unmatched, db.settings);
+  const ignored = sync.unmatched.length - unmatched.length;
   const [copied, setCopied] = useState(false);
   const [confirmOff, setConfirmOff] = useState(false);
   const desktop = isTauri();
@@ -91,7 +93,7 @@ export function Settings() {
       <section className="card settings-section">
         <h2 className="section-title">همگام‌سازی خودکار مصرف</h2>
         <p className="muted small">
-          افزونه‌ی <strong>دیده‌بان همراه</strong> روی Chrome هر لپ‌تاپ، هر دو ساعت مصرف هفتگی و <M>Fable</M> اکانتی را که در claude.ai وارد است
+          افزونه‌ی <strong>دیده‌بان همراه</strong> روی Chrome هر لپ‌تاپ، هر دو ساعت مصرف سشن ۵ ساعته، هفتگی و <M>Fable</M> اکانتی را که در claude.ai وارد است
           می‌خواند و می‌فرستد؛ دیده‌بان هر چند دقیقه آن را می‌گیرد و کارت اکانتی را که همان ایمیل را دارد به‌روز می‌کند.
         </p>
         {!code ? (
@@ -159,29 +161,44 @@ export function Settings() {
               </div>
             </div>
             {confirmOff && <p className="xsmall muted">با خاموش کردن، این کد باطل می‌شود و بعداً باید کد تازه را دوباره در همه‌ی افزونه‌ها بچسبانی.</p>}
-            {sync.unmatched.length > 0 && (
+            {unmatched.length > 0 && (
               <div className="stack-8">
                 <span className="field-label">این اکانت‌ها در افزونه هستند ولی در دیده‌بان نه:</span>
-                {sync.unmatched.map((r) => (
-                  <div key={r.email} className="row-between gap-12 unmatched">
-                    <span className="small">
-                      <M>{r.email}</M>
-                      {r.device && <span className="muted"> · از <M>{r.device}</M></span>}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => {
-                        saveAccount({ ...blankAccount(), label: r.email.split('@')[0], email: r.email });
-                        syncNow();
-                      }}
-                    >
-                      <Icon name="plus" size={15} />
-                      افزودن
-                    </button>
-                  </div>
-                ))}
+                <div className="unmatched-list">
+                  {unmatched.map((r) => (
+                    <div key={r.email} className="row-between gap-8 unmatched">
+                      <span className="small ellipsis" title={r.email}>
+                        <M>{r.email}</M>
+                        {r.device && <span className="muted"> · از <M>{r.device}</M></span>}
+                      </span>
+                      <span className="row gap-4">
+                        <button
+                          type="button"
+                          className="btn sm"
+                          onClick={() => {
+                            saveAccount({ ...blankAccount(), label: r.email.split('@')[0], email: r.email });
+                            syncNow();
+                          }}
+                        >
+                          <Icon name="plus" size={13} />
+                          افزودن
+                        </button>
+                        <button type="button" className="btn sm ghost" aria-label={`حذف ${r.email} از این فهرست`} title="حذف از این فهرست" onClick={() => ignoreEmail(r.email)}>
+                          <Icon name="trash" size={14} />
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
+            {ignored > 0 && (
+              <span className="xsmall muted">
+                <M>{ignored}</M> اکانت را از این فهرست حذف کرده‌ای.{' '}
+                <button type="button" className="link-btn" onClick={restoreIgnored}>
+                  برگرداندن
+                </button>
+              </span>
             )}
           </>
         )}

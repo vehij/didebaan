@@ -67,11 +67,14 @@ export async function poll() {
       const reading = parseUsage(usage);
       // The usage page itself has the per-product breakdown; use it if it was opened recently.
       const fromPage = page && Date.now() - Date.parse(page.at) < 3 * 60 * 60 * 1000 ? page.reading : null;
+      // A session read from the page is only good until that session resets.
+      const pageSession = fromPage?.session && (!fromPage.session.resetsAt || Date.parse(fromPage.session.resetsAt) > Date.now()) ? fromPage.session : null;
       const report = {
         email,
         orgId: org.uuid,
         orgName: typeof org.name === 'string' ? org.name : null,
         plan: planOf(org),
+        session: reading.session ?? pageSession ?? null,
         weekly: reading.weekly ?? fromPage?.weekly ?? null,
         fable: reading.fable ?? fromPage?.fable ?? null,
         products: reading.products.length ? reading.products : (fromPage?.products ?? []),

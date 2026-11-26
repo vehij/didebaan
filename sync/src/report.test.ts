@@ -18,6 +18,8 @@ describe('parseReport', () => {
     expect(r.email).toBe('main.max@example.com');
     expect(r.weekly).toEqual({ pct: 79, resetsAt: '2026-10-29T18:00:00.000Z' });
     expect(r.products).toHaveLength(2);
+    expect(r.session).toBeNull();
+    expect(parseReport({ ...base, session: { pct: 41.26, resetsAt: '2026-10-26T13:20:00Z' } })!.session).toEqual({ pct: 41.3, resetsAt: '2026-10-26T13:20:00.000Z' });
   });
 
   it('rejects reports without an email, a time, or any limit', () => {

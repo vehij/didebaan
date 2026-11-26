@@ -12,6 +12,7 @@ describe('parseUsage', () => {
       seven_day: { utilization: 79, resets_at: '2026-10-29T18:00:00Z' },
       seven_day_fable: { utilization: 75.4, resets_at: '2026-10-29T18:00:00Z' },
     });
+    expect(r.session).toEqual({ pct: 11, resetsAt: '2026-10-26T13:20:00Z' });
     expect(r.weekly).toEqual({ pct: 79, resetsAt: '2026-10-29T18:00:00Z' });
     expect(r.fable?.pct).toBe(75.4);
   });
@@ -33,8 +34,8 @@ describe('parseUsage', () => {
   });
 
   it('returns nulls for unknown shapes', () => {
-    expect(parseUsage(null)).toEqual({ weekly: null, fable: null, products: [] });
-    expect(parseUsage({ foo: 1 })).toEqual({ weekly: null, fable: null, products: [] });
+    expect(parseUsage(null)).toEqual({ session: null, weekly: null, fable: null, products: [] });
+    expect(parseUsage({ foo: 1 })).toEqual({ session: null, weekly: null, fable: null, products: [] });
   });
 });
 
@@ -62,6 +63,7 @@ Cowork
 Other
 0%`.split('\n');
     const r = parseUsagePage(lines, now);
+    expect(r.session).toEqual({ pct: 11, resetsAt: new Date(2026, 9, 26, 13, 20).toISOString() });
     expect(r.weekly).toEqual({ pct: 79, resetsAt: new Date(2026, 9, 29, 21, 30).toISOString() });
     expect(r.fable?.pct).toBe(75);
     expect(r.products.map((p: { name: string }) => p.name)).toEqual(['Claude Code', 'Chats', 'Cowork', 'Other']);
@@ -70,6 +72,14 @@ Other
   it('turns reset text into the next moment', () => {
     expect(resetTextToIso('Resets Monday 9:00 AM', now)).toBe(new Date(2026, 10, 2, 9, 0).toISOString());
     expect(resetTextToIso('Resets at 1:20 PM', now)).toBe(new Date(2026, 9, 26, 13, 20).toISOString());
+    expect(resetTextToIso('Resets in 3 hr 12 min', now)).toBe(new Date(2026, 9, 26, 13, 12).toISOString());
+    expect(resetTextToIso('Resets in 45 minutes', now)).toBe(new Date(2026, 9, 26, 10, 45).toISOString());
+  });
+
+  it('does not borrow a neighbouring block’s number for a session that shows none', () => {
+    const r = parseUsagePage(['Current session', 'Starts when a message is sent', 'This week', 'Resets Thursday 9:30 PM', '79% used'], now);
+    expect(r.session).toBeNull();
+    expect(r.weekly?.pct).toBe(79);
   });
 });
 

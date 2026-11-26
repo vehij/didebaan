@@ -1,5 +1,5 @@
 import { formatTime } from './jalali';
-import { PLANS, type Account, type Database, type Plan, type UsageEntry, type WeeklyLimit, type Weekday } from './types';
+import { PLANS, type Account, type Database, type Plan, type RemoteInfo, type UsageEntry, type WeeklyLimit, type Weekday } from './types';
 
 /** A report as stored by the sync server (see sync/src/report.ts). */
 export interface RemoteReport {
@@ -7,6 +7,7 @@ export interface RemoteReport {
   orgId: string | null;
   orgName: string | null;
   plan: string | null;
+  session?: { pct: number; resetsAt: string | null } | null;
   weekly: { pct: number; resetsAt: string | null } | null;
   fable: { pct: number; resetsAt: string | null } | null;
   products: { name: string; pct: number }[];
@@ -77,6 +78,7 @@ export function applyRemoteReports(db: Database, reports: RemoteReport[], newId:
         autoRenew: r.renewal ? r.renewal.autoRenew : (a.remote?.autoRenew ?? null),
         hasWeekly: !!r.weekly,
         hasFable: !!r.fable,
+        session: r.session ? { pct: Math.round(r.session.pct), resetsAt: r.session.resetsAt } : null,
       },
     };
     if (total.usedPct !== a.total.usedPct || fable.usedPct !== a.fable.usedPct) {
@@ -88,4 +90,28 @@ export function applyRemoteReports(db: Database, reports: RemoteReport[], newId:
 
   const unmatched = [...latest.values()].filter((r) => !matched.has(r.email.toLowerCase()));
   return { db: changed ? { ...db, accounts, usage: [...db.usage, ...usage] } : db, unmatched };
+}
+
+export const SESSION_MS = 5 * 60 * 60 * 1000;
+
+export interface SessionState {
+  pct: number;
+  /** When the running session resets; null when none is running. */
+  resetsAt: Date | null;
+  /** Share of the 5-hour window already gone, 0–1. */
+  elapsed: number;
+}
+
+/**
+ * The 5-hour session as it stands at `now`: a session whose reset time has passed is empty again,
+ * and a reading too old to say anything is dropped. Null when the account has no session limit.
+ */
+export function sessionAt(remote: RemoteInfo | null | undefined, now: Date): SessionState | null {
+  const s = remote?.session;
+  if (!s) return null;
+  const idle: SessionState = { pct: 0, resetsAt: null, elapsed: 0 };
+  if (!s.resetsAt) return now.getTime() - Date.parse(remote.capturedAt) > SESSION_MS ? idle : { ...idle, pct: s.pct };
+  const end = Date.parse(s.resetsAt);
+  if (Number.isNaN(end) || end <= now.getTime()) return idle;
+  return { pct: s.pct, resetsAt: new Date(end), elapsed: Math.max(0, Math.min(1, 1 - (end - now.getTime()) / SESSION_MS)) };
 }
