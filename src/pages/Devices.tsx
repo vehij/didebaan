@@ -122,7 +122,7 @@ function DeviceEditor({ deviceId, onClose }: { deviceId: string | null; onClose:
       </label>
       <label className="field">
         <span className="field-label">یادداشت</span>
-        <textarea className="input" rows={3} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
+        <textarea className="input" rows={2} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
       </label>
     </Modal>
   );

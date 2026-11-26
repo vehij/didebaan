@@ -117,13 +117,59 @@ async function fromPage(reading) {
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => {
+const RELEASES = 'https://api.github.com/repos/vehij/didebaan/releases/latest';
+
+/** True when version `a` is newer than `b` ("0.10.1" vs "0.9.3"). */
+export function isNewer(a, b) {
+  const x = String(a).split('.').map(Number);
+  const y = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  }
+  return false;
+}
+
+/**
+ * Chrome loads this extension from a folder and keeps running the copy it read at load time.
+ * Once the folder holds another version (the update script replaced the files), reload to pick it up;
+ * the pairing and settings survive a reload.
+ */
+export async function reloadIfReplacedOnDisk() {
+  try {
+    const res = await fetch(chrome.runtime.getURL('manifest.json'), { cache: 'no-store' });
+    const onDisk = (await res.json()).version;
+    if (typeof onDisk === 'string' && onDisk !== chrome.runtime.getManifest().version) chrome.runtime.reload();
+  } catch {
+    // The folder is mid-update or unreadable; the next check will see it.
+  }
+}
+
+/** Remembers the newest published version so the popup can say an update is waiting. */
+export async function checkLatestRelease() {
+  try {
+    const res = await fetch(RELEASES, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!res.ok) return;
+    const tag = String((await res.json()).tag_name ?? '').replace(/^v/, '');
+    if (/^\d+(\.\d+)+$/.test(tag)) await chrome.storage.local.set({ latest: tag });
+  } catch {
+    // Offline; try again with the next poll.
+  }
+}
+
+function schedule() {
   chrome.alarms.create('poll', { periodInMinutes: EVERY_MINUTES, delayInMinutes: 1 });
+  chrome.alarms.create('disk', { periodInMinutes: 5, delayInMinutes: 1 });
+  checkLatestRelease();
+}
+chrome.runtime.onInstalled.addListener(schedule);
+chrome.runtime.onStartup.addListener(schedule);
+chrome.alarms.onAlarm.addListener((a) => {
+  if (a.name === 'disk') reloadIfReplacedOnDisk();
+  if (a.name === 'poll') {
+    poll();
+    checkLatestRelease();
+  }
 });
-chrome.runtime.onStartup.addListener(() => {
-  chrome.alarms.create('poll', { periodInMinutes: EVERY_MINUTES, delayInMinutes: 1 });
-});
-chrome.alarms.onAlarm.addListener((a) => a.name === 'poll' && poll());
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg?.type === 'pair') {
@@ -138,6 +184,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg?.type === 'unpair') {
     chrome.storage.local.remove(['config', 'status']).then(() => reply({ ok: true }));
     return true;
+  }
+  if (msg?.type === 'opened') {
+    // The popup was opened: the moment someone is most likely to have just run the update script.
+    reloadIfReplacedOnDisk();
+    checkLatestRelease();
+    return false;
   }
   if (msg?.type === 'poll') {
     poll().then(() => reply({ ok: true }));

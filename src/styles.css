@@ -2099,9 +2099,13 @@ body {
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* pages slide in when you switch sections */
+/*
+ * Pages slide in when you switch sections. The fill is `backwards` only: a finished animation that
+ * still fills forwards on transform would keep the page a containing block for fixed children and
+ * pin dialogs opened from inside a page to the page instead of the window.
+ */
 .page {
-  animation: page-in 0.42s var(--ease-out) both;
+  animation: page-in 0.42s var(--ease-out) backwards;
 }
 @keyframes page-in {
   from {
@@ -2864,4 +2868,211 @@ body {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+/* ── Compact dialogs ───────────────────────────────────── */
+.overlay {
+  padding: 24px 16px;
+}
+.modal {
+  max-width: 700px;
+  max-height: calc(100vh - 48px);
+  border-radius: 18px;
+}
+.modal-head {
+  align-items: center;
+  padding: 12px 18px;
+}
+.modal-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.modal-head .small {
+  font-size: 11.5px;
+}
+.modal-body {
+  gap: 16px;
+  padding: 16px 18px 18px;
+}
+.modal-body > section,
+.modal-body .stack-16,
+.modal-body .stack-14 {
+  gap: 10px;
+}
+.modal-body h3 {
+  font-size: 13.5px;
+}
+.modal-foot {
+  padding: 10px 18px;
+  border-radius: 0 0 18px 18px;
+}
+.modal .field {
+  gap: 4px;
+}
+.modal .field-label {
+  font-size: 12px;
+}
+.modal .input {
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+.modal .input.mono {
+  font-size: 12.5px;
+}
+.modal textarea.input {
+  height: auto;
+  padding: 7px 11px;
+  line-height: 1.6;
+}
+.modal .input-icon .input {
+  padding-inline-start: 34px;
+}
+.modal .input-icon > svg {
+  inset-inline-start: 11px;
+}
+.modal .btn {
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+.modal .btn.primary {
+  padding: 0 18px;
+}
+.modal .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+.modal .segmented button {
+  min-height: 28px;
+  padding: 0 11px;
+  font-size: 12.5px;
+}
+.modal .switch {
+  transform: scale(0.8);
+  transform-origin: center;
+}
+.modal .device-toggle {
+  min-height: 30px;
+  padding: 0 10px;
+  gap: 6px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+.modal .device-toggle .box {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+}
+.modal .check-row {
+  min-height: 28px;
+  font-size: 12.5px;
+}
+.modal .check-row input {
+  width: 15px;
+  height: 15px;
+}
+
+.limit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+.limit-section {
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 13px;
+}
+.limit-section .stack-12,
+.limit-section .stack-8 {
+  gap: 6px;
+}
+.limit-section .meter-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+}
+.limit-section .pct-input {
+  width: 54px;
+  height: 28px;
+  font-size: 14px;
+}
+.limit-section .range {
+  height: 20px;
+}
+.limit-section .day {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.limit-section .hint {
+  align-items: flex-start;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.limit-section .hint svg {
+  flex: none;
+  margin-top: 3px;
+  width: 13px;
+  height: 13px;
+}
+
+/* compact time picker */
+.timepicker {
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 11px;
+}
+.timepicker > .row-between {
+  gap: 8px;
+}
+.time-readout {
+  gap: 8px;
+}
+.time-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+.time-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.time-digits {
+  font-size: 18px;
+}
+.stepper button {
+  width: 24px;
+  height: 13px;
+}
+.timepicker .chip-btn {
+  min-height: 24px;
+  padding: 0 8px;
+  gap: 4px;
+  font-size: 11.5px;
+}
+.sky {
+  height: 24px;
+  border-radius: 9px;
+}
+.sky-thumb {
+  width: 22px;
+  height: 22px;
+}
+.sky-thumb svg {
+  width: 12px;
+  height: 12px;
+}
+.sky-ticks {
+  height: 13px;
+}
+.sky-tick {
+  font-size: 9.5px;
 }

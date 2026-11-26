@@ -39,8 +39,20 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
+function isNewer(a, b) {
+  const x = String(a).split('.').map(Number);
+  const y = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  }
+  return false;
+}
+
 async function render() {
-  const { config, status, device, debug } = await chrome.storage.local.get(['config', 'status', 'device', 'debug']);
+  const { config, status, device, debug, latest } = await chrome.storage.local.get(['config', 'status', 'device', 'debug', 'latest']);
+  $('update').hidden = !latest || !isNewer(latest, chrome.runtime.getManifest().version);
+  $('latest').textContent = latest ?? '';
+  $('updater').textContent = /win/i.test(navigator.userAgentData?.platform || navigator.platform || '') ? 'update.bat' : 'update.command';
   $('pair').hidden = !!config;
   $('main').hidden = !config;
   $('device').value = device ?? '';
@@ -84,4 +96,5 @@ $('unpair').addEventListener('click', async () => {
 });
 $('version').textContent = `نسخه‌ی ${chrome.runtime.getManifest().version}`;
 chrome.storage.onChanged.addListener(render);
+chrome.runtime.sendMessage({ type: 'opened' });
 render();

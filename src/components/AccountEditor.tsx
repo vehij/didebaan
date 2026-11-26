@@ -253,32 +253,34 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
         </div>
       </section>
 
-      <LimitSection
-        title="لیمیت هفتگی کل"
-        icon={<Icon name="layers" size={14} />}
-        limit={draft.total}
-        calendar={calendar}
-        warnAt={db.settings.warnAt}
-        onChange={(total) => set({ total })}
-        schedule={{ weekday: draft.total.resetWeekday, time: draft.total.resetTime }}
-      />
-      <LimitSection
-        title={
-          <>
-            لیمیت هفتگی <M>Fable</M>
-          </>
-        }
-        icon={<Icon name="sparkle" size={14} />}
-        limit={draft.fable}
-        calendar={calendar}
-        warnAt={db.settings.warnAt}
-        onChange={(fable) => set({ fable })}
-        schedule={fableSchedule}
-        same={draft.fableSameReset}
-        onSame={(fableSameReset) =>
-          set({ fableSameReset, fable: fableSameReset ? draft.fable : { ...draft.fable, resetWeekday: draft.total.resetWeekday, resetTime: draft.total.resetTime } })
-        }
-      />
+      <div className="limit-grid">
+        <LimitSection
+          title="لیمیت هفتگی کل"
+          icon={<Icon name="layers" size={14} />}
+          limit={draft.total}
+          calendar={calendar}
+          warnAt={db.settings.warnAt}
+          onChange={(total) => set({ total })}
+          schedule={{ weekday: draft.total.resetWeekday, time: draft.total.resetTime }}
+        />
+        <LimitSection
+          title={
+            <>
+              لیمیت هفتگی <M>Fable</M>
+            </>
+          }
+          icon={<Icon name="sparkle" size={14} />}
+          limit={draft.fable}
+          calendar={calendar}
+          warnAt={db.settings.warnAt}
+          onChange={(fable) => set({ fable })}
+          schedule={fableSchedule}
+          same={draft.fableSameReset}
+          onSame={(fableSameReset) =>
+            set({ fableSameReset, fable: fableSameReset ? draft.fable : { ...draft.fable, resetWeekday: draft.total.resetWeekday, resetTime: draft.total.resetTime } })
+          }
+        />
+      </div>
 
       <section className="stack-14">
         <h3>تمدید اشتراک</h3>
@@ -310,7 +312,7 @@ export function AccountEditor({ accountId, onClose }: { accountId: string | null
         </div>
         <label className="field">
           <span className="field-label">یادداشت</span>
-          <textarea className="input" rows={3} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
+          <textarea className="input" rows={2} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
         </label>
       </section>
     </Modal>
